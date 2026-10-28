@@ -61,7 +61,7 @@ export default function RiddleCard({
     const [copiedPrompt, setCopiedPrompt] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    // Sledování, zda si hráč kopíroval nápovědu pro AI
+    // Sledování přiznání AI a stavů
     const [usedPromptCopy, setUsedPromptCopy] = useState(false)
     const [selectedAi, setSelectedAi] = useState<string | null>(null)
     const [aiSaved, setAiSaved] = useState(false)
@@ -91,48 +91,58 @@ export default function RiddleCard({
         const res = await submitGuessAction(riddleId, guess)
         setLoading(false)
 
-        if (res.error) {
+        if ('error' in res && res.error) {
             setMessage(res.error)
             return
         }
 
-        if (res.status === 'TYPO') {
-            setIsTypo(true)
-            setMessage(res.message || null)
-            return
-        }
+        if ('status' in res) {
+            if (res.status === 'TYPO') {
+                setIsTypo(true)
+                setMessage(res.message || null)
+                return
+            }
 
-        if (res.status === 'SOLVED') {
-            setIsSolved(true)
-            setScore(res.score || 0)
-            setSecretAnswer(res.secretAnswer || '')
-            if (res.hintsRevealed) setHints(res.hintsRevealed)
-            return
-        }
+            if (res.status === 'SOLVED') {
+                setIsSolved(true)
+                setScore(res.score || 0)
+                setSecretAnswer(res.secretAnswer || '')
+                if (res.hintsRevealed) setHints(res.hintsRevealed)
+                return
+            }
 
-        if (res.status === 'WRONG' || res.status === 'IN_DRAWER') {
-            setMessage(res.message || null)
-            if (res.hintsRevealed) setHints(res.hintsRevealed)
-            setGuess('')
+            if (res.status === 'WRONG' || res.status === 'IN_DRAWER') {
+                setMessage(res.message || null)
+                if (res.hintsRevealed) setHints(res.hintsRevealed)
+                setGuess('')
+            }
         }
     }
 
-    // Přeskočení na další nápovědu
+    // Přeskočení na další nápovědu přes serverovou akci
     const handleNextHint = async () => {
         if (loading || hints.length >= totalHintsCount) return
+
         setLoading(true)
+        setMessage(null)
+        setIsTypo(false)
+
         const res = await requestNextHintAction(riddleId)
         setLoading(false)
 
-        if (res.hintsRevealed) {
+        if ('error' in res && res.error) {
+            setMessage(res.error)
+            return
+        }
+
+        if ('hintsRevealed' in res && res.hintsRevealed) {
             setHints(res.hintsRevealed)
-            setMessage(null)
         }
     }
 
     // Uložení přiznání AI / Čisté hlavy
     const handleSelectAi = async (usedAi: boolean, modelName?: string) => {
-        const label = usedAi ? (modelName || 'Jiný') : 'Čistá hlava'
+        const label = usedAi ? modelName || 'Jiný' : 'Čistá hlava'
         setSelectedAi(label)
         setAiSaved(true)
         await recordAiUsageAction(riddleId, usedAi, modelName)
@@ -142,7 +152,6 @@ export default function RiddleCard({
     const handleShareResult = () => {
         const total = totalHintsCount
         const used = hints.length
-        // Zelené čtverečky pro odhalené stopy, prázdné pro neodemčené
         const grid = '🟩'.repeat(used) + '⬜'.repeat(Math.max(0, total - used))
         const partner = selectedAi ? `Parťák: ${selectedAi}` : 'Hádači.cz'
 
@@ -153,8 +162,6 @@ export default function RiddleCard({
         setTimeout(() => setCopiedShare(false), 2500)
     }
 
-    // Generování URL pro český platební QR kód (SPAYD formát přes spayd.cz generátor)
-    // Účet si zde můžeš upravit na svůj reálný IBAN
     const iban = 'CZ8708000000001388225023'
     const qrCodeUrl = `https://api.paylibo.com/paylibo/generator/image?iban=${iban}&amount=50.00&currency=CZK&message=Kava%20pro%20Hadace`
 
@@ -167,7 +174,9 @@ export default function RiddleCard({
                 </span>
                 <div className="flex items-center gap-1.5 text-xs text-slate-400">
                     <Lightbulb className="w-4 h-4 text-amber-400" />
-                    <span>Stopa {hints.length} z {totalHintsCount}</span>
+                    <span>
+                        Stopa {hints.length} z {totalHintsCount}
+                    </span>
                 </div>
             </div>
 
@@ -185,8 +194,6 @@ export default function RiddleCard({
                         </div>
                         <div className="text-sm font-semibold text-amber-400 mt-2">
                             +{score} bodů do žebříčku
-
-                            {/* Nový řádek: Přezdívka v síni slávy */}
                             <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400">
                                 <span>Zapsáno v síni slávy jako:</span>
                                 <NicknameEditor />
@@ -194,7 +201,7 @@ export default function RiddleCard({
                         </div>
                     </div>
 
-                    {/* Sekce: Přiznání AI */}
+                    {/* Přiznání AI */}
                     <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -219,8 +226,8 @@ export default function RiddleCard({
                                 type="button"
                                 onClick={() => handleSelectAi(false)}
                                 className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === 'Čistá hlava'
-                                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
-                                    : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
                             >
                                 <Brain className="w-3.5 h-3.5 text-amber-400" />
@@ -233,8 +240,8 @@ export default function RiddleCard({
                                     type="button"
                                     onClick={() => handleSelectAi(true, model.name)}
                                     className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === model.name
-                                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
-                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                            ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
+                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                         }`}
                                 >
                                     <Bot className="w-3.5 h-3.5 text-indigo-400" />
@@ -244,7 +251,7 @@ export default function RiddleCard({
                         </div>
                     </div>
 
-                    {/* Tlačítka akcí: Sdílení & Káva */}
+                    {/* Tlačítka sdílení & podpora */}
                     <div className="flex gap-2">
                         <button
                             type="button"
@@ -274,7 +281,7 @@ export default function RiddleCard({
                         </button>
                     </div>
 
-                    {/* Rozbalovací QR kód na donate */}
+                    {/* QR kód pro donate */}
                     {showDonate && (
                         <div className="bg-slate-950 p-4 rounded-2xl border border-amber-500/30 text-center animate-fade-in">
                             <p className="text-xs text-amber-300 font-bold mb-1">
@@ -295,7 +302,9 @@ export default function RiddleCard({
                                 Česká spořitelna • Okamžitá QR platba
                             </p>
                         </div>
-                    )}<div className="pt-2 border-t border-slate-800/60 mt-4">
+                    )}
+
+                    <div className="pt-2 border-t border-slate-800/60 mt-4">
                         <Link
                             href="/archiv"
                             className="w-full py-2.5 px-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2 transition"
@@ -305,14 +314,11 @@ export default function RiddleCard({
                         </Link>
                     </div>
 
-                    {/* Reklamace hádanky */}
                     <RiddleReportButton riddleId={riddleId} />
-
                 </div>
-
             ) : (
                 <>
-                    {/* Seznam odkrytých nápověd */}
+                    {/* Odkryté stopy */}
                     <div className="space-y-3 mb-6">
                         {hints.map((hintText, index) => (
                             <div
@@ -329,7 +335,7 @@ export default function RiddleCard({
                         ))}
                     </div>
 
-                    {/* Tlačítko zkopírování do AI */}
+                    {/* Prompt pro AI */}
                     <button
                         onClick={handleCopyPrompt}
                         type="button"
@@ -349,19 +355,19 @@ export default function RiddleCard({
                         )}
                     </button>
 
-                    {/* Chybové či stavové hlášky */}
+                    {/* Chybové zprávy */}
                     {message && (
                         <div
                             className={`p-3 rounded-xl text-xs mb-4 text-left border ${isTypo
-                                ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
-                                : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
+                                    ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
+                                    : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
                                 }`}
                         >
                             {message}
                         </div>
                     )}
 
-                    {/* Formulář pro hádání */}
+                    {/* Formulář odpovědi */}
                     <form onSubmit={handleGuessSubmit} className="space-y-3">
                         <div className="flex gap-2">
                             <input
@@ -382,15 +388,16 @@ export default function RiddleCard({
                             </button>
                         </div>
 
-                        {/* Odkrytí další nápovědy bez tipování */}
                         {hints.length < totalHintsCount && (
                             <button
                                 type="button"
                                 onClick={handleNextHint}
                                 disabled={loading}
-                                className="w-full text-center text-xs text-slate-400 hover:text-slate-200 py-2 transition"
+                                className="w-full text-center text-xs text-slate-400 hover:text-slate-200 py-2 transition disabled:opacity-50"
                             >
-                                Zatím nevím, odkrýt další nápovědu bez pokusu
+                                {loading
+                                    ? 'Odkrývám další stopu...'
+                                    : 'Zatím nevím, odkrýt další nápovědu bez pokusu'}
                             </button>
                         )}
                     </form>

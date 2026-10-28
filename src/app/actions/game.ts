@@ -1,11 +1,14 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { validateAnswer } from '@/lib/game/validator'
 
 // Zajistí existenci anonymního uživatele
 async function getOrCreateUser(supabase: any) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
     if (user) return user
 
     const { data: anonData, error } = await supabase.auth.signInAnonymously()
@@ -70,7 +73,6 @@ export async function submitGuessAction(riddleId: string, guess: string) {
 
     // Případ B: Správná odpověď -> Výhra!
     if (validation.isCorrect) {
-        // Výpočet bodů (start na 100 b., odečet za nápovědy a chybné pokusy)
         const penaltyPerHint = 100 / totalHints
         const hintPenalty = (state.current_step - 1) * penaltyPerHint
         const wrongPenalty = state.wrong_guesses_count * 5
@@ -128,6 +130,12 @@ export async function requestNextHintAction(riddleId: string) {
         .eq('id', riddleId)
         .single()
 
+    if (!riddle || !riddle.hints) {
+        return { error: 'Hádanka nebyla nalezena.' }
+    }
+
+    const allHints = riddle.hints as string[]
+
     let { data: state } = await supabase
         .from('user_riddle_state')
         .select('*')
@@ -135,9 +143,39 @@ export async function requestNextHintAction(riddleId: string) {
         .eq('riddle_id', riddleId)
         .maybeSingle()
 
-    if (!state || !riddle) return { error: 'Chyba stavu.' }
+    // Pokud stav ještě neexistuje (uživatel rovnou kliknul na další stopu), založíme ho s krokem 2
+    if (!state) {
+        const { data: newState, error: insertErr } = await supabase
+            .from('user_riddle_state')
+            .insert({
+                user_id: user.id,
+                riddle_id: riddleId,
+                current_step: 2,
+                wrong_guesses_count: 0,
+                status: 'IN_PROGRESS',
+            })
+            .select()
+            .single()
 
-    const allHints = riddle.hints as string[]
+        if (insertErr || !newState) {
+            return { error: 'Nepodařilo se uložit herní stav.' }
+        }
+
+        return {
+            currentStep: 2,
+            hintsRevealed: allHints.slice(0, 2),
+        }
+    }
+
+    // Pokud je už vyřešeno, vrátíme všechny stopy
+    if (state.status === 'SOLVED') {
+        return {
+            currentStep: allHints.length,
+            hintsRevealed: allHints,
+        }
+    }
+
+    // Jinak posuneme o 1 stopu dál
     const nextStep = Math.min(state.current_step + 1, allHints.length)
 
     await supabase
@@ -161,7 +199,9 @@ export async function recordAiUsageAction(
     aiModelName?: string
 ) {
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
 
     if (!user) return { error: 'Uživatel nenalezen.' }
 
@@ -178,10 +218,6 @@ export async function recordAiUsageAction(
     if (error) return { error: error.message }
     return { success: true }
 }
-
-import { revalidatePath } from 'next/cache'
-
-// ... stávající kód submitGuessAction, requestNextHintAction, recordAiUsageAction ...
 
 // 4. Uložení nebo změna hráčské přezdívky
 export async function updateNicknameAction(nickname: string) {
@@ -203,7 +239,6 @@ export async function updateNicknameAction(nickname: string) {
 
     if (error) return { error: error.message }
 
-    // Okamžitě aktualizujeme data na stránce žebříčku i na hlavní stránce
     revalidatePath('/zebricek')
     revalidatePath('/')
 
@@ -213,7 +248,9 @@ export async function updateNicknameAction(nickname: string) {
 // 5. Získání stávající přezdívky hráče
 export async function getNicknameAction() {
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
 
     if (!user) return null
 
@@ -233,16 +270,16 @@ export async function submitRiddleReportAction(
     message?: string
 ) {
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
 
-    const { error } = await supabase
-        .from('riddle_reports')
-        .insert({
-            riddle_id: riddleId,
-            user_id: user?.id || null,
-            report_type: reportType,
-            message: message?.trim() || null,
-        })
+    const { error } = await supabase.from('riddle_reports').insert({
+        riddle_id: riddleId,
+        user_id: user?.id || null,
+        report_type: reportType,
+        message: message?.trim() || null,
+    })
 
     if (error) return { error: error.message }
     return { success: true }
@@ -259,15 +296,15 @@ export async function submitTopicSuggestionAction(
     }
 
     const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
 
-    const { error } = await supabase
-        .from('topic_suggestions')
-        .insert({
-            user_id: user?.id || null,
-            category_type: categoryType || 'Obecný tip',
-            suggestion: cleanSuggestion.slice(0, 500),
-        })
+    const { error } = await supabase.from('topic_suggestions').insert({
+        user_id: user?.id || null,
+        category_type: categoryType || 'Obecný tip',
+        suggestion: cleanSuggestion.slice(0, 500),
+    })
 
     if (error) return { error: error.message }
     return { success: true }

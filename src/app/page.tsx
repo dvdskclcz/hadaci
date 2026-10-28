@@ -4,27 +4,27 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import RiddleCard from '@/components/RiddleCard'
 
 async function DailyGame() {
-  // Explicitně Next.js 16 sdělíme, že tato komponenta běží až při požadavku klienta
+  // Explicitně Next.js sdělíme, že tato komponenta běží dynamicky při požadavku
   await connection()
 
   const supabase = await createServerSupabaseClient()
 
-  // Zjistíme dnešní datum ve formátu YYYY-MM-DD
+  // Dnešní datum YYYY-MM-DD
   const todayStr = new Date().toISOString().split('T')[0]
 
   // 1. Zkusíme najít hádanku určenou přesně pro dnešní den
   let { data: riddle } = await supabase
     .from('riddles')
-    .select('id, category, hints, secret_answer')
+    .select('id, category, hints')
     .eq('publish_date', todayStr)
     .eq('is_active', true)
     .maybeSingle()
 
-  // 2. Pokud pro dnešek není nastaveno datum, vezmeme hádanku označenou jako is_daily
+  // 2. Fallback pro případ, že na dnešek není naplánováno
   if (!riddle) {
     const { data: fallbackRiddle } = await supabase
       .from('riddles')
-      .select('id, category, hints, secret_answer')
+      .select('id, category, hints')
       .eq('is_daily', true)
       .eq('is_active', true)
       .limit(1)
@@ -41,8 +41,46 @@ async function DailyGame() {
     )
   }
 
-  const allHints = riddle.hints as string[]
-  const initialHints = [allHints[0]]
+  const allHints = (riddle.hints as string[]) || []
+
+  // 3. Načtení rozehraného stavu hráče
+  let initialHints = [allHints[0]]
+  let initialIsSolved = false
+  let initialScore: number | null = null
+  let initialSecretAnswer: string | null = null
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: state } = await supabase
+      .from('user_riddle_state')
+      .select('current_step, status, score_earned')
+      .eq('user_id', user.id)
+      .eq('riddle_id', riddle.id)
+      .maybeSingle()
+
+    if (state) {
+      // Odkryjeme přesně tolik stop, kolik má hráč v databázi
+      const step = Math.max(1, Math.min(state.current_step || 1, allHints.length))
+      initialHints = allHints.slice(0, step)
+
+      if (state.status === 'SOLVED') {
+        initialIsSolved = true
+        initialScore = state.score_earned || null
+
+        // Tajenku dotáhneme ze serveru pouze pro hráče, který už hádanku úspěšně vyřešil
+        const { data: secretData } = await supabase
+          .from('riddles')
+          .select('secret_answer')
+          .eq('id', riddle.id)
+          .single()
+
+        initialSecretAnswer = secretData?.secret_answer || null
+      }
+    }
+  }
 
   return (
     <RiddleCard
@@ -50,6 +88,9 @@ async function DailyGame() {
       category={riddle.category}
       initialHints={initialHints}
       totalHintsCount={allHints.length}
+      initialIsSolved={initialIsSolved}
+      initialScore={initialScore}
+      initialSecretAnswer={initialSecretAnswer}
     />
   )
 }
