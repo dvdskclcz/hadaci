@@ -11,7 +11,7 @@ async function DailyGame() {
   const supabase = await createServerSupabaseClient()
 
   // Dnešní datum YYYY-MM-DD
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
 
   // 1. Zkusíme najít hádanku určenou přesně pro dnešní den
   let { data: riddle } = await supabase
