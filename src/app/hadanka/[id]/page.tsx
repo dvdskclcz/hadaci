@@ -1,14 +1,19 @@
+import { Suspense } from 'react'
+import { connection } from 'next/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import RiddleCard from '@/components/RiddleCard'
 import { ArrowLeft } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 type Props = {
     params: Promise<{ id: string }>
 }
 
-export default async function ArchiveRiddlePage({ params }: Props) {
+async function RiddleContent({ params }: Props) {
+    await connection()
     const { id } = await params
     const supabase = await createServerSupabaseClient()
 
@@ -34,7 +39,7 @@ export default async function ArchiveRiddlePage({ params }: Props) {
     let initialScore: number | null = null
     let initialSecretAnswer: string | null = null
 
-    // 2. Načtení rozehraného stavu uživatele
+    // 2. Načtení stavu přihlášeného hráče
     const {
         data: { user },
     } = await supabase.auth.getUser()
@@ -55,7 +60,6 @@ export default async function ArchiveRiddlePage({ params }: Props) {
                 initialIsSolved = true
                 initialScore = state.score_earned || null
 
-                // Tajenku dotáhneme pouze pro vyřešenou hádanku
                 const { data: secretData } = await supabase
                     .from('riddles')
                     .select('secret_answer')
@@ -64,7 +68,6 @@ export default async function ArchiveRiddlePage({ params }: Props) {
 
                 initialSecretAnswer = secretData?.secret_answer || null
             } else if (state.status === 'IN_DRAWER') {
-                // Kontrola denního zámku šuplíku podle českého data poslední akce
                 const lastUpdate = state.updated_at
                     ? new Date(state.updated_at).toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
                     : todayStr
@@ -77,8 +80,7 @@ export default async function ArchiveRiddlePage({ params }: Props) {
     }
 
     return (
-        <main className="w-full max-w-lg mx-auto px-4 pb-12 flex-1 flex flex-col items-center">
-            {/* Horní navigační odkaz zpět do archivu */}
+        <>
             <div className="w-full flex items-center justify-between mb-6">
                 <Link
                     href="/archiv"
@@ -102,6 +104,22 @@ export default async function ArchiveRiddlePage({ params }: Props) {
                 initialScore={initialScore}
                 initialSecretAnswer={initialSecretAnswer}
             />
+        </>
+    )
+}
+
+export default function ArchiveRiddlePage({ params }: Props) {
+    return (
+        <main className="w-full max-w-lg mx-auto px-4 pb-12 flex-1 flex flex-col items-center">
+            <Suspense
+                fallback={
+                    <div className="w-full py-12 text-center text-xs text-slate-400 animate-pulse">
+                        Načítám hádanku z archivu...
+                    </div>
+                }
+            >
+                <RiddleContent params={params} />
+            </Suspense>
         </main>
     )
 }
