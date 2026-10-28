@@ -6,8 +6,6 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import RiddleCard from '@/components/RiddleCard'
 import { ArrowLeft } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
-
 type Props = {
     params: Promise<{ id: string }>
 }
