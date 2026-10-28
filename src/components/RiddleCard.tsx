@@ -29,6 +29,7 @@ type RiddleCardProps = {
     initialHints: string[]
     totalHintsCount: number
     initialIsSolved?: boolean
+    initialIsInDrawer?: boolean
     initialScore?: number | null
     initialSecretAnswer?: string | null
 }
@@ -48,6 +49,7 @@ export default function RiddleCard({
     initialHints,
     totalHintsCount,
     initialIsSolved = false,
+    initialIsInDrawer = false,
     initialScore = null,
     initialSecretAnswer = null,
 }: RiddleCardProps) {
@@ -56,6 +58,7 @@ export default function RiddleCard({
     const [message, setMessage] = useState<string | null>(null)
     const [isTypo, setIsTypo] = useState(false)
     const [isSolved, setIsSolved] = useState(initialIsSolved)
+    const [isInDrawer, setIsInDrawer] = useState(initialIsInDrawer)
     const [score, setScore] = useState<number | null>(initialScore)
     const [secretAnswer, setSecretAnswer] = useState<string | null>(initialSecretAnswer)
     const [copiedPrompt, setCopiedPrompt] = useState(false)
@@ -108,6 +111,14 @@ export default function RiddleCard({
                 setScore(res.score || 0)
                 setSecretAnswer(res.secretAnswer || '')
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
+                return
+            }
+
+            if (res.status === 'IN_DRAWER') {
+                setIsInDrawer(true) // <-- ZAMKNE HRU PRO DNEŠEK
+                setMessage(res.message || null)
+                if (res.hintsRevealed) setHints(res.hintsRevealed)
+                setGuess('')
                 return
             }
 
@@ -226,8 +237,8 @@ export default function RiddleCard({
                                 type="button"
                                 onClick={() => handleSelectAi(false)}
                                 className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === 'Čistá hlava'
-                                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
-                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                                    : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
                             >
                                 <Brain className="w-3.5 h-3.5 text-amber-400" />
@@ -240,8 +251,8 @@ export default function RiddleCard({
                                     type="button"
                                     onClick={() => handleSelectAi(true, model.name)}
                                     className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === model.name
-                                            ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
-                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
+                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                         }`}
                                 >
                                     <Bot className="w-3.5 h-3.5 text-indigo-400" />
@@ -359,48 +370,71 @@ export default function RiddleCard({
                     {message && (
                         <div
                             className={`p-3 rounded-xl text-xs mb-4 text-left border ${isTypo
-                                    ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
-                                    : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
+                                ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
+                                : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
                                 }`}
                         >
                             {message}
                         </div>
                     )}
 
-                    {/* Formulář odpovědi */}
-                    <form onSubmit={handleGuessSubmit} className="space-y-3">
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={guess}
-                                onChange={(e) => setGuess(e.target.value)}
-                                placeholder="Tvůj tip (např. Karel Čapek)..."
-                                disabled={loading}
-                                className="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading || !guess.trim()}
-                                className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold px-5 py-3 rounded-xl text-sm transition flex items-center gap-1.5"
-                            >
-                                <span>Tipnout</span>
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
+                    {/* Pokud je v šuplíku, formulář zamkneme a zobrazíme info box */}
+                    {isInDrawer ? (
+                        <div className="bg-amber-950/30 border border-amber-600/40 rounded-2xl p-5 text-center space-y-3 animate-fade-in">
+                            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto text-amber-400">
+                                <FolderArchive className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-amber-300">Hádanka je v šuplíku 🗄️</h3>
+                                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                                    Pro dnešek ti došly nápovědy i pokusy. Hádanka na tebe počká v šuplíku – znovu to můžeš zkusit zítra!
+                                </p>
+                            </div>
+                            <div className="pt-2 border-t border-amber-500/20">
+                                <Link
+                                    href="/archiv"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-xs text-slate-200 font-semibold transition"
+                                >
+                                    <FolderArchive className="w-4 h-4 text-indigo-400" />
+                                    <span>Prohlédnout archiv a šuplík</span>
+                                </Link>
+                            </div>
                         </div>
+                    ) : (
+                        <form onSubmit={handleGuessSubmit} className="space-y-3">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={guess}
+                                    onChange={(e) => setGuess(e.target.value)}
+                                    placeholder="Tvůj tip (např. Karel Čapek)..."
+                                    disabled={loading}
+                                    className="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={loading || !guess.trim()}
+                                    className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold px-5 py-3 rounded-xl text-sm transition flex items-center gap-1.5"
+                                >
+                                    <span>Tipnout</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </div>
 
-                        {hints.length < totalHintsCount && (
-                            <button
-                                type="button"
-                                onClick={handleNextHint}
-                                disabled={loading}
-                                className="w-full text-center text-xs text-slate-400 hover:text-slate-200 py-2 transition disabled:opacity-50"
-                            >
-                                {loading
-                                    ? 'Odkrývám další stopu...'
-                                    : 'Zatím nevím, odkrýt další nápovědu bez pokusu'}
-                            </button>
-                        )}
-                    </form>
+                            {hints.length < totalHintsCount && (
+                                <button
+                                    type="button"
+                                    onClick={handleNextHint}
+                                    disabled={loading}
+                                    className="w-full text-center text-xs text-slate-400 hover:text-slate-200 py-2 transition disabled:opacity-50"
+                                >
+                                    {loading
+                                        ? 'Odkrývám další stopu...'
+                                        : 'Zatím nevím, odkrýt další nápovědu bez pokusu'}
+                                </button>
+                            )}
+                        </form>
+                    )}
                 </>
             )}
         </div>

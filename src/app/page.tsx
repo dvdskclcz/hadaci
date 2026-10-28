@@ -46,6 +46,7 @@ async function DailyGame() {
   // 3. Načtení rozehraného stavu hráče
   let initialHints = [allHints[0]]
   let initialIsSolved = false
+  let initialIsInDrawer = false
   let initialScore: number | null = null
   let initialSecretAnswer: string | null = null
 
@@ -56,7 +57,7 @@ async function DailyGame() {
   if (user) {
     const { data: state } = await supabase
       .from('user_riddle_state')
-      .select('current_step, status, score_earned')
+      .select('current_step, status, score_earned, updated_at')
       .eq('user_id', user.id)
       .eq('riddle_id', riddle.id)
       .maybeSingle()
@@ -78,6 +79,16 @@ async function DailyGame() {
           .single()
 
         initialSecretAnswer = secretData?.secret_answer || null
+      } else if (state.status === 'IN_DRAWER') {
+        // Zjistíme, zda byla do šuplíku uložena dnes
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+        const lastUpdate = state.updated_at
+          ? new Date(state.updated_at).toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+          : today
+
+        if (lastUpdate === today) {
+          initialIsInDrawer = true
+        }
       }
     }
   }
@@ -89,6 +100,7 @@ async function DailyGame() {
       initialHints={initialHints}
       totalHintsCount={allHints.length}
       initialIsSolved={initialIsSolved}
+      initialIsInDrawer={initialIsInDrawer}
       initialScore={initialScore}
       initialSecretAnswer={initialSecretAnswer}
     />

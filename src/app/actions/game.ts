@@ -57,6 +57,21 @@ export async function submitGuessAction(riddleId: string, guess: string) {
         return { error: 'Tuto hádanku už máš úspěšně vyřešenou!' }
     }
 
+    // ZÁMEK ŠUPLÍKU: Pokud je hádanka v šuplíku a hráč to zkouší ještě tentýž den
+    if (state.status === 'IN_DRAWER') {
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+        const lastUpdate = state.updated_at
+            ? new Date(state.updated_at).toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+            : today
+
+        if (lastUpdate === today) {
+            return {
+                error: 'Tato hádanka je pro dnešek odložena v šuplíku. Další pokus dostaneš až zítra!',
+            }
+        }
+
+    }
+
     const validation = validateAnswer(guess, riddle.secret_answer, riddle.accepted_aliases)
 
     // Případ A: Překlep -> nestrháváme pokus ani body
@@ -112,7 +127,7 @@ export async function submitGuessAction(riddleId: string, guess: string) {
     return {
         status: isOutOfHints ? 'IN_DRAWER' : 'WRONG',
         message: isOutOfHints
-            ? 'Došly ti nápovědy! Hádanka je odložena do šuplíku. Můžeš bádat dál.'
+            ? 'Došly ti nápovědy i pokusy! Hádanka byla odložena do šuplíku. Znovu bádat můžeš zase zítra.'
             : 'Bohužel vedle. Odemkla se ti další stopa (-5 b. za chybný tip).',
         currentStep: Math.min(nextStep, totalHints),
         hintsRevealed: allHints.slice(0, Math.min(nextStep, totalHints)),
