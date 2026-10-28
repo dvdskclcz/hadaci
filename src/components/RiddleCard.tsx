@@ -115,14 +115,14 @@ export default function RiddleCard({
             }
 
             if (res.status === 'IN_DRAWER') {
-                setIsInDrawer(true) // <-- ZAMKNE HRU PRO DNEŠEK
+                setIsInDrawer(true) // ZAMKNE HRU PRO DNEŠEK
                 setMessage(res.message || null)
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
                 setGuess('')
                 return
             }
 
-            if (res.status === 'WRONG' || res.status === 'IN_DRAWER') {
+            if (res.status === 'WRONG') {
                 setMessage(res.message || null)
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
                 setGuess('')
@@ -237,8 +237,8 @@ export default function RiddleCard({
                                 type="button"
                                 onClick={() => handleSelectAi(false)}
                                 className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === 'Čistá hlava'
-                                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
-                                    : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
                             >
                                 <Brain className="w-3.5 h-3.5 text-amber-400" />
@@ -251,8 +251,8 @@ export default function RiddleCard({
                                     type="button"
                                     onClick={() => handleSelectAi(true, model.name)}
                                     className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === model.name
-                                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
-                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                            ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
+                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                         }`}
                                 >
                                     <Bot className="w-3.5 h-3.5 text-indigo-400" />
@@ -324,8 +324,6 @@ export default function RiddleCard({
                             <span>Pokračovat v luštění z archivu a šuplíku</span>
                         </Link>
                     </div>
-
-                    <RiddleReportButton riddleId={riddleId} />
                 </div>
             ) : (
                 <>
@@ -370,8 +368,8 @@ export default function RiddleCard({
                     {message && (
                         <div
                             className={`p-3 rounded-xl text-xs mb-4 text-left border ${isTypo
-                                ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
-                                : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
+                                    ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
+                                    : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
                                 }`}
                         >
                             {message}
@@ -437,6 +435,11 @@ export default function RiddleCard({
                     )}
                 </>
             )}
+
+            {/* Reklamace a hlášení chyb – viditelné vždy dole pro všechny stavy */}
+            <div className="mt-6 pt-3 border-t border-slate-800/60 flex justify-center">
+                <RiddleReportButton riddleId={riddleId} />
+            </div>
         </div>
     )
 }
