@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og'
 
-export const runtime = 'nodejs'
 export const alt = 'Hádači.cz – Denní vědomostní dedukce'
 export const size = {
     width: 1200,
@@ -19,13 +18,12 @@ export default async function Image() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#020617', // slate-950
-                    border: '16px solid #0f172a', // slate-900
+                    backgroundColor: '#020617',
+                    border: '16px solid #0f172a',
                     fontFamily: 'sans-serif',
                     position: 'relative',
                 }}
             >
-                {/* Pozadí s lehkým gradientem */}
                 <div
                     style={{
                         position: 'absolute',
@@ -38,7 +36,6 @@ export default async function Image() {
                     }}
                 />
 
-                {/* Logo a název */}
                 <div
                     style={{
                         display: 'flex',
@@ -53,7 +50,7 @@ export default async function Image() {
                         style={{
                             fontSize: 84,
                             fontWeight: 900,
-                            color: '#fbbf24', // amber-400
+                            color: '#fbbf24',
                             letterSpacing: '-2px',
                         }}
                     >
@@ -61,7 +58,6 @@ export default async function Image() {
                     </div>
                 </div>
 
-                {/* Podtitul */}
                 <div
                     style={{
                         fontSize: 36,
@@ -75,7 +71,6 @@ export default async function Image() {
                     Denní vědomostní dedukce
                 </div>
 
-                {/* Popis */}
                 <div
                     style={{
                         fontSize: 22,
@@ -89,7 +84,6 @@ export default async function Image() {
                     Uhádni osobnost, památku či vynález na co nejméně stop dřív než umělá inteligence.
                 </div>
 
-                {/* Herní štítky */}
                 <div
                     style={{
                         display: 'flex',
