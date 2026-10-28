@@ -287,6 +287,22 @@ export default function AdminPanel({
         }
     }
 
+    const riddles = existingRiddles
+
+    // Zjistíme dnešní a zítřejší datum ve formátu YYYY-MM-DD (český čas)
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = tomorrow.toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+
+    // Seřadíme budoucí nepublikované hádanky vzestupně podle data
+    const upcomingRiddles = riddles
+        ?.filter((r) => r.publish_date && r.publish_date > todayStr)
+        .sort((a, b) => a.publish_date.localeCompare(b.publish_date))
+
+    // ID hádanky, která je nejblíže na řadě
+    const nextUpcomingId = upcomingRiddles?.[0]?.id
+
     const filteredRiddles = existingRiddles.filter((r) => {
         const q = searchQuery.toLowerCase().trim()
         if (!q) return true
@@ -700,29 +716,58 @@ export default function AdminPanel({
                                     ) : (
                                         filteredRiddles.map((r) => {
                                             const isCurrentEditing = editingRiddleId === r.id
+                                            const isToday = r.publish_date === todayStr
+                                            const isNext = r.id === nextUpcomingId
+                                            const isTomorrow = r.publish_date === tomorrowStr
+
                                             return (
                                                 <tr
                                                     key={r.id}
                                                     className={`transition ${isCurrentEditing
                                                             ? 'bg-indigo-500/10 border-l-2 border-indigo-400'
+                                                            : isToday
+                                                            ? 'bg-emerald-950/20 hover:bg-emerald-950/30 border-l-2 border-emerald-500 ring-1 ring-emerald-500/20'
+                                                            : isNext
+                                                            ? 'bg-amber-950/20 hover:bg-amber-950/30 border-l-2 border-amber-500 ring-1 ring-amber-500/20 shadow-lg shadow-amber-500/5'
                                                             : 'hover:bg-slate-800/30'
                                                         }`}
                                                 >
-                                                    <td className="py-3 px-3 font-semibold text-amber-400 whitespace-nowrap">
-                                                        {r.publish_date}
-                                                    </td>
-                                                    <td className="py-3 px-3 font-bold text-white">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span>{r.secret_answer}</span>
-                                                            {isCurrentEditing && (
-                                                                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-normal">
-                                                                    Právě edituješ
+                                                    <td className="py-3 px-3 font-semibold text-amber-400 whitespace-nowrap align-top">
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <span className="font-mono text-xs">{r.publish_date || 'Bez data'}</span>
+                                                            {isToday && (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 w-fit">
+                                                                    ● Dnes aktivní
+                                                                </span>
+                                                            )}
+                                                            {isNext && (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse w-fit">
+                                                                    🚀 Nejbližší na řadě {isTomorrow && '(Zítra)'}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-3 text-slate-400">{r.category}</td>
-                                                    <td className="py-3 px-3 text-right">
+                                                    <td className="py-3 px-3 font-bold text-white align-top">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <span className="text-sm font-semibold text-white">{r.secret_answer}</span>
+                                                                {isCurrentEditing && (
+                                                                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-normal">
+                                                                        Právě edituješ
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {r.hints?.[0] && (
+                                                                <p className="text-xs text-slate-400 line-clamp-1 italic font-normal">
+                                                                    1. stopa: „{r.hints[0]}“
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-slate-400 align-top whitespace-nowrap">
+                                                        <span className="text-xs font-bold text-slate-300">{r.category}</span>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-right align-top">
                                                         <div className="inline-flex items-center gap-1">
                                                             <button
                                                                 type="button"
