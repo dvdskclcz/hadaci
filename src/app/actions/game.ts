@@ -54,7 +54,19 @@ export async function submitGuessAction(riddleId: string, guess: string) {
     }
 
     if (state.status === 'SOLVED') {
-        return { error: 'Tuto hádanku už máš úspěšně vyřešenou!' }
+        const { data: secretData } = await supabase
+            .from('riddles')
+            .select('secret_answer, hints')
+            .eq('id', riddleId)
+            .single()
+
+        return {
+            status: 'SOLVED',
+            score: state.score_earned || 0,
+            secretAnswer: secretData?.secret_answer || '',
+            hintsRevealed: secretData?.hints || [],
+            message: 'Tuto hádanku už máš úspěšně vyřešenou!',
+        }
     }
 
     // ZÁMEK ŠUPLÍKU: Pokud je hádanka v šuplíku a hráč to zkouší ještě tentýž den

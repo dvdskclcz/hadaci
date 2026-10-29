@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import RiddleReportButton from '@/components/RiddleReportButton'
 import NicknameEditor from '@/components/NicknameEditor'
@@ -32,6 +32,7 @@ type RiddleCardProps = {
     initialIsInDrawer?: boolean
     initialScore?: number | null
     initialSecretAnswer?: string | null
+    initialSelectedAi?: string | null
 }
 
 const AI_MODELS = [
@@ -52,6 +53,7 @@ export default function RiddleCard({
     initialIsInDrawer = false,
     initialScore = null,
     initialSecretAnswer = null,
+    initialSelectedAi = null,
 }: RiddleCardProps) {
     const [hints, setHints] = useState<string[]>(initialHints)
     const [guess, setGuess] = useState('')
@@ -66,10 +68,38 @@ export default function RiddleCard({
 
     // Sledování přiznání AI a stavů
     const [usedPromptCopy, setUsedPromptCopy] = useState(false)
-    const [selectedAi, setSelectedAi] = useState<string | null>(null)
-    const [aiSaved, setAiSaved] = useState(false)
+    const [selectedAi, setSelectedAi] = useState<string | null>(initialSelectedAi)
+    const [aiSaved, setAiSaved] = useState(Boolean(initialSelectedAi))
     const [copiedShare, setCopiedShare] = useState(false)
     const [showDonate, setShowDonate] = useState(false)
+
+    // Klientská pojistka pro anonymní hráče a okamžitý reload
+    useEffect(() => {
+        // 1. Obnova vyřešeného stavu pro anonymního hráče po reloadu
+        if (!isSolved) {
+            const cachedSolve = localStorage.getItem(`hadaci_solved_${riddleId}`)
+            if (cachedSolve) {
+                try {
+                    const parsed = JSON.parse(cachedSolve)
+                    setIsSolved(true)
+                    setScore(parsed.score)
+                    setSecretAnswer(parsed.secretAnswer)
+                    if (parsed.hints) setHints(parsed.hints)
+                } catch {
+                    // ignorovat neplatný JSON
+                }
+            }
+        }
+
+        // 2. Obnova volby AI modelu
+        if (!selectedAi) {
+            const cachedAi = localStorage.getItem(`hadaci_ai_${riddleId}`)
+            if (cachedAi) {
+                setSelectedAi(cachedAi)
+                setAiSaved(true)
+            }
+        }
+    }, [riddleId, isSolved, selectedAi])
 
     // Zkopírování formátovaného promptu pro AI
     const handleCopyPrompt = () => {
@@ -111,6 +141,16 @@ export default function RiddleCard({
                 setScore(res.score || 0)
                 setSecretAnswer(res.secretAnswer || '')
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
+
+                // Uložíme vyřešení pro anonymního hráče i do localStorage
+                localStorage.setItem(
+                    `hadaci_solved_${riddleId}`,
+                    JSON.stringify({
+                        score: res.score || 0,
+                        secretAnswer: res.secretAnswer || '',
+                        hints: res.hintsRevealed || hints,
+                    })
+                )
                 return
             }
 
@@ -156,6 +196,7 @@ export default function RiddleCard({
         const label = usedAi ? modelName || 'Jiný' : 'Čistá hlava'
         setSelectedAi(label)
         setAiSaved(true)
+        localStorage.setItem(`hadaci_ai_${riddleId}`, label)
         await recordAiUsageAction(riddleId, usedAi, modelName)
     }
 
@@ -237,8 +278,8 @@ export default function RiddleCard({
                                 type="button"
                                 onClick={() => handleSelectAi(false)}
                                 className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === 'Čistá hlava'
-                                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
-                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                                    : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
                             >
                                 <Brain className="w-3.5 h-3.5 text-amber-400" />
@@ -251,8 +292,8 @@ export default function RiddleCard({
                                     type="button"
                                     onClick={() => handleSelectAi(true, model.name)}
                                     className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === model.name
-                                            ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
-                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
+                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                         }`}
                                 >
                                     <Bot className="w-3.5 h-3.5 text-indigo-400" />
@@ -368,8 +409,8 @@ export default function RiddleCard({
                     {message && (
                         <div
                             className={`p-3 rounded-xl text-xs mb-4 text-left border ${isTypo
-                                    ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
-                                    : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
+                                ? 'bg-amber-950/50 border-amber-600/50 text-amber-200'
+                                : 'bg-rose-950/50 border-rose-600/50 text-rose-200'
                                 }`}
                         >
                             {message}
