@@ -106,10 +106,11 @@ export default function UserNav() {
     <button
       onClick={handleGoogleLogin}
       type="button"
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/60 text-xs font-semibold text-slate-200 transition shadow-sm"
+      className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/60 text-xs font-semibold text-slate-200 transition shadow-sm shrink-0"
     >
-      <LogIn className="w-3.5 h-3.5 text-amber-400" />
-      <span>Uložit postup přes Google</span>
+      <LogIn className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+      <span className="hidden sm:inline">Uložit postup přes Google</span>
+      <span className="sm:hidden">Přihlásit</span>
     </button>
   )
 }

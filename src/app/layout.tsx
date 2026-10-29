@@ -54,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="cs" className="dark">
-      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen flex flex-col`}>
+      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden`}>
         <Navbar />
         {children}
       </body>

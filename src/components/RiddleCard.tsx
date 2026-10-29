@@ -273,11 +273,11 @@ export default function RiddleCard({
                                 : 'Použil jsi vlastní dedukci, nebo ti napověděla umělá inteligence?'}
                         </p>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-wrap gap-2 justify-center">
                             <button
                                 type="button"
                                 onClick={() => handleSelectAi(false)}
-                                className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === 'Čistá hlava'
+                                className={`py-1.5 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === 'Čistá hlava'
                                     ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
                                     : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
@@ -291,7 +291,7 @@ export default function RiddleCard({
                                     key={model.id}
                                     type="button"
                                     onClick={() => handleSelectAi(true, model.name)}
-                                    className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === model.name
+                                    className={`py-1.5 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition ${selectedAi === model.name
                                         ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
                                         : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                         }`}
@@ -441,19 +441,19 @@ export default function RiddleCard({
                         </div>
                     ) : (
                         <form onSubmit={handleGuessSubmit} className="space-y-3">
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full">
                                 <input
                                     type="text"
                                     value={guess}
                                     onChange={(e) => setGuess(e.target.value)}
-                                    placeholder="Tvůj tip (např. Karel Čapek)..."
+                                    placeholder="Napiš svůj tip (např. Karel Čapek)..."
                                     disabled={loading}
-                                    className="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+                                    className="w-full flex-1 min-w-0 bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-2.5 sm:py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
                                 />
                                 <button
                                     type="submit"
                                     disabled={loading || !guess.trim()}
-                                    className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold px-5 py-3 rounded-xl text-sm transition flex items-center gap-1.5"
+                                    className="w-full sm:w-auto px-5 py-2.5 sm:py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-sm font-bold rounded-xl transition flex items-center justify-center gap-1.5 shrink-0"
                                 >
                                     <span>Tipnout</span>
                                     <ArrowRight className="w-4 h-4" />

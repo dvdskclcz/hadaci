@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { connection } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import RiddleCard from '@/components/RiddleCard'
-import UserNav from '@/components/UserNav'
 
 async function DailyGame() {
   // Explicitně Next.js sdělíme, že tato komponenta běží dynamicky při požadavku
@@ -120,13 +119,15 @@ async function DailyGame() {
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-lg flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-black text-amber-400 tracking-tight">Hádači.cz</h1>
-          <p className="text-[11px] text-slate-400">Trénuj hlavu, promptuj AI a sbírej body</p>
-        </div>
-        <UserNav />
-      </div>
+      {/* Vyčištěná desktopová hlavička bez duplicitního tlačítka */}
+      <header className="hidden sm:block text-center mb-8 max-w-xl mx-auto w-full px-4">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">
+          Hádači<span className="text-amber-400">.cz</span>
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Trénuj hlavu, promptuj AI a sbírej body
+        </p>
+      </header>
 
       <Suspense fallback={<p className="text-slate-400 text-sm animate-pulse">Příprava hracího stolu...</p>}>
         <DailyGame />
