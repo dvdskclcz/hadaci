@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Trophy, HelpCircle, Archive } from 'lucide-react'
+import ChangelogModal from '@/components/ChangelogModal'
 import NicknameEditor from '@/components/NicknameEditor'
 import TopicSuggestionModal from '@/components/TopicSuggestionModal'
 import RulesModal from '@/components/RulesModal'
@@ -45,6 +46,12 @@ export default function Navbar() {
                     {/* Tlačítko pro tip */}
                     <TopicSuggestionModal variant="nav" />
                 </nav>
+
+
+                <div className="flex items-center gap-2">
+                    <ChangelogModal />
+                    {/* zbytek navigačních prvků / přihlášení */}
+                </div>
 
                 <div className="pl-2 border-l border-slate-800 shrink-0">
                     <NicknameEditor />

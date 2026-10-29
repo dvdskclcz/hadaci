@@ -7,8 +7,11 @@ const inter = Inter({
   subsets: ['latin', 'latin-ext'],
 })
 
+// Pokud je nastavená proměnná prostředí nebo ostrá doména, použije ji, jinak padá na Vercel
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hadaci.vercel.app'
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://hadaci.cz'),
+  metadataBase: new URL(siteUrl),
   title: {
     default: 'Hádači.cz – Denní vědomostní dedukce',
     template: '%s | Hádači.cz',
@@ -22,16 +25,25 @@ export const metadata: Metadata = {
     title: 'Hádači.cz – Denní vědomostní dedukce',
     description:
       'Uhádni dnešní českou osobnost, památku či fenomén na co nejméně stop. Zvládneš to bez nápovědy?',
-    url: 'https://hadaci.cz',
+    url: siteUrl,
     siteName: 'Hádači.cz',
     locale: 'cs_CZ',
     type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Hádači.cz – Denní vědomostní dedukce',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Hádači.cz – Denní vědomostní dedukce',
     description:
       'Uhádni dnešní českou osobnost, památku či fenomén na co nejméně stop. Zvládneš to bez nápovědy?',
+    images: ['/og-image.png'],
   },
 }
 
