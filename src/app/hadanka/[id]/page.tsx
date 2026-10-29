@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import RiddleCard from '@/components/RiddleCard'
 import { ArrowLeft } from 'lucide-react'
+import { formatCzechDate } from '@/lib/utils'
 
 type Props = {
     params: Promise<{ id: string }>
@@ -36,6 +37,7 @@ async function RiddleContent({ params }: Props) {
     let initialIsInDrawer = false
     let initialScore: number | null = null
     let initialSecretAnswer: string | null = null
+    let initialSelectedAi: string | null = null
 
     // 2. Načtení stavu přihlášeného hráče
     const {
@@ -45,7 +47,7 @@ async function RiddleContent({ params }: Props) {
     if (user) {
         const { data: state } = await supabase
             .from('user_riddle_state')
-            .select('current_step, status, score_earned, updated_at')
+            .select('current_step, status, score_earned, updated_at, used_ai, ai_model')
             .eq('user_id', user.id)
             .eq('riddle_id', riddle.id)
             .maybeSingle()
@@ -57,6 +59,13 @@ async function RiddleContent({ params }: Props) {
             if (state.status === 'SOLVED') {
                 initialIsSolved = true
                 initialScore = state.score_earned || null
+
+                // Obnovení volby AI / Čisté hlavy z databáze
+                if (state.used_ai === false) {
+                    initialSelectedAi = 'Čistá hlava'
+                } else if (state.used_ai === true) {
+                    initialSelectedAi = state.ai_model || 'Jiný'
+                }
 
                 const { data: secretData } = await supabase
                     .from('riddles')
@@ -88,7 +97,7 @@ async function RiddleContent({ params }: Props) {
                     <span>Zpět do archivu</span>
                 </Link>
                 <span className="text-[11px] font-mono text-slate-500">
-                    Publikováno: {riddle.publish_date}
+                    Publikováno: {formatCzechDate(riddle.publish_date)}
                 </span>
             </div>
 
@@ -101,6 +110,7 @@ async function RiddleContent({ params }: Props) {
                 initialIsInDrawer={initialIsInDrawer}
                 initialScore={initialScore}
                 initialSecretAnswer={initialSecretAnswer}
+                initialSelectedAi={initialSelectedAi}
             />
         </>
     )

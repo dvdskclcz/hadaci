@@ -50,6 +50,7 @@ async function DailyGame() {
   let initialIsInDrawer = false
   let initialScore: number | null = null
   let initialSecretAnswer: string | null = null
+  let initialSelectedAi: string | null = null
 
   const {
     data: { user },
@@ -58,7 +59,7 @@ async function DailyGame() {
   if (user) {
     const { data: state } = await supabase
       .from('user_riddle_state')
-      .select('current_step, status, score_earned, updated_at')
+      .select('current_step, status, score_earned, updated_at, used_ai, ai_model')
       .eq('user_id', user.id)
       .eq('riddle_id', riddle.id)
       .maybeSingle()
@@ -71,6 +72,13 @@ async function DailyGame() {
       if (state.status === 'SOLVED') {
         initialIsSolved = true
         initialScore = state.score_earned || null
+
+        // Obnovení volby AI / Čisté hlavy z databáze
+        if (state.used_ai === false) {
+          initialSelectedAi = 'Čistá hlava'
+        } else if (state.used_ai === true) {
+          initialSelectedAi = state.ai_model || 'Jiný'
+        }
 
         // Tajenku dotáhneme ze serveru pouze pro hráče, který už hádanku úspěšně vyřešil
         const { data: secretData } = await supabase
@@ -104,6 +112,7 @@ async function DailyGame() {
       initialIsInDrawer={initialIsInDrawer}
       initialScore={initialScore}
       initialSecretAnswer={initialSecretAnswer}
+      initialSelectedAi={initialSelectedAi}
     />
   )
 }

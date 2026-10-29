@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Archive, CheckCircle2, FolderArchive, PlayCircle, Trophy, Lock } from 'lucide-react'
 import TopicSuggestionModal from '@/components/TopicSuggestionModal'
+import { formatCzechDate } from '@/lib/utils'
 
 async function ArchiveList() {
   await connection()
@@ -89,7 +90,7 @@ async function ArchiveList() {
                           {riddle.category}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          {riddle.publish_date}
+                          {formatCzechDate(riddle.publish_date)}
                         </div>
                       </div>
                     </div>
@@ -146,8 +147,8 @@ async function ArchiveList() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-500">
-                      {riddle.publish_date}
+                    <span className="text-xs text-slate-400 font-medium">
+                      {formatCzechDate(riddle.publish_date)}
                     </span>
                   </div>
                 </div>

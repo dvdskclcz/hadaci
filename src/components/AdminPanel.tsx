@@ -12,6 +12,7 @@ import {
     updateReportStatusAction,
     deleteReportAction,
 } from '@/app/actions/admin'
+import { formatCzechDate } from '@/lib/utils'
 import {
     Lock,
     PlusCircle,
@@ -734,7 +735,7 @@ export default function AdminPanel({
                                                 >
                                                     <td className="py-3 px-3 font-semibold text-amber-400 whitespace-nowrap align-top">
                                                         <div className="flex flex-col gap-1.5">
-                                                            <span className="font-mono text-xs">{r.publish_date || 'Bez data'}</span>
+                                                            <span className="font-mono text-xs">{r.publish_date ? formatCzechDate(r.publish_date) : 'Bez data'}</span>
                                                             {isToday && (
                                                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 w-fit">
                                                                     ● Dnes aktivní
