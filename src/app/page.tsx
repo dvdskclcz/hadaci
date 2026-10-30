@@ -47,9 +47,11 @@ async function DailyGame() {
   let initialHints = [allHints[0]]
   let initialIsSolved = false
   let initialIsInDrawer = false
+  let isDrawerRepair = false
   let initialScore: number | null = null
   let initialSecretAnswer: string | null = null
   let initialSelectedAi: string | null = null
+  let initialWrongGuessesCount = 0
 
   const {
     data: { user },
@@ -58,13 +60,14 @@ async function DailyGame() {
   if (user) {
     const { data: state } = await supabase
       .from('user_riddle_state')
-      .select('current_step, status, score_earned, updated_at, used_ai, ai_model')
+      .select('current_step, status, score_earned, updated_at, used_ai, ai_model_name, wrong_guesses_count')
       .eq('user_id', user.id)
       .eq('riddle_id', riddle.id)
       .maybeSingle()
 
     if (state) {
       // Odkryjeme přesně tolik stop, kolik má hráč v databázi
+      initialWrongGuessesCount = state.wrong_guesses_count || 0
       const step = Math.max(1, Math.min(state.current_step || 1, allHints.length))
       initialHints = allHints.slice(0, step)
 
@@ -76,7 +79,7 @@ async function DailyGame() {
         if (state.used_ai === false) {
           initialSelectedAi = 'Čistá hlava'
         } else if (state.used_ai === true) {
-          initialSelectedAi = state.ai_model || 'Jiný'
+          initialSelectedAi = state.ai_model_name || 'Jiný'
         }
 
         // Tajenku dotáhneme ze serveru pouze pro hráče, který už hádanku úspěšně vyřešil
@@ -96,6 +99,9 @@ async function DailyGame() {
 
         if (lastUpdate === today) {
           initialIsInDrawer = true
+        } else {
+          isDrawerRepair = true
+          initialHints = allHints
         }
       }
     }
@@ -109,9 +115,11 @@ async function DailyGame() {
       totalHintsCount={allHints.length}
       initialIsSolved={initialIsSolved}
       initialIsInDrawer={initialIsInDrawer}
+      isDrawerRepair={isDrawerRepair}
       initialScore={initialScore}
       initialSecretAnswer={initialSecretAnswer}
       initialSelectedAi={initialSelectedAi}
+      initialWrongGuessesCount={initialWrongGuessesCount}
     />
   )
 }

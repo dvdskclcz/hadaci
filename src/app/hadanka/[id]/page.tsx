@@ -35,9 +35,11 @@ async function RiddleContent({ params }: Props) {
     let initialHints = [allHints[0]]
     let initialIsSolved = false
     let initialIsInDrawer = false
+    let isDrawerRepair = false
     let initialScore: number | null = null
     let initialSecretAnswer: string | null = null
     let initialSelectedAi: string | null = null
+    let initialWrongGuessesCount = 0
 
     // 2. Načtení stavu přihlášeného hráče
     const {
@@ -47,12 +49,13 @@ async function RiddleContent({ params }: Props) {
     if (user) {
         const { data: state } = await supabase
             .from('user_riddle_state')
-            .select('current_step, status, score_earned, updated_at, used_ai, ai_model')
+            .select('current_step, status, score_earned, updated_at, used_ai, ai_model_name, wrong_guesses_count')
             .eq('user_id', user.id)
             .eq('riddle_id', riddle.id)
             .maybeSingle()
 
         if (state) {
+            initialWrongGuessesCount = state.wrong_guesses_count || 0
             const step = Math.max(1, Math.min(state.current_step || 1, allHints.length))
             initialHints = allHints.slice(0, step)
 
@@ -64,7 +67,7 @@ async function RiddleContent({ params }: Props) {
                 if (state.used_ai === false) {
                     initialSelectedAi = 'Čistá hlava'
                 } else if (state.used_ai === true) {
-                    initialSelectedAi = state.ai_model || 'Jiný'
+                    initialSelectedAi = state.ai_model_name || 'Jiný'
                 }
 
                 const { data: secretData } = await supabase
@@ -80,7 +83,13 @@ async function RiddleContent({ params }: Props) {
                     : todayStr
 
                 if (lastUpdate === todayStr) {
+                    // Zkaženo dnes -> zamčeno do zítřka
                     initialIsInDrawer = true
+                } else {
+                    // Zkaženo dříve -> dnes je den odvety!
+                    isDrawerRepair = true
+                    // Při opravě ze šuplíku má hráč rovnou k dispozici všechny indicie
+                    initialHints = allHints
                 }
             }
         }
@@ -108,9 +117,11 @@ async function RiddleContent({ params }: Props) {
                 totalHintsCount={allHints.length}
                 initialIsSolved={initialIsSolved}
                 initialIsInDrawer={initialIsInDrawer}
+                isDrawerRepair={isDrawerRepair}
                 initialScore={initialScore}
                 initialSecretAnswer={initialSecretAnswer}
                 initialSelectedAi={initialSelectedAi}
+                initialWrongGuessesCount={initialWrongGuessesCount}
             />
         </>
     )

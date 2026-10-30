@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import RiddleReportButton from '@/components/RiddleReportButton'
+import { calculateRiddleScore, getStepPenalty, calculateDrawerScore } from '@/lib/scoring'
 import NicknameEditor from '@/components/NicknameEditor'
 import {
     submitGuessAction,
@@ -30,9 +31,11 @@ type RiddleCardProps = {
     totalHintsCount: number
     initialIsSolved?: boolean
     initialIsInDrawer?: boolean
+    isDrawerRepair?: boolean
     initialScore?: number | null
     initialSecretAnswer?: string | null
     initialSelectedAi?: string | null
+    initialWrongGuessesCount?: number
 }
 
 const AI_MODELS = [
@@ -51,9 +54,11 @@ export default function RiddleCard({
     totalHintsCount,
     initialIsSolved = false,
     initialIsInDrawer = false,
+    isDrawerRepair = false,
     initialScore = null,
     initialSecretAnswer = null,
     initialSelectedAi = null,
+    initialWrongGuessesCount = 0,
 }: RiddleCardProps) {
     const [hints, setHints] = useState<string[]>(initialHints)
     const [guess, setGuess] = useState('')
@@ -65,6 +70,8 @@ export default function RiddleCard({
     const [secretAnswer, setSecretAnswer] = useState<string | null>(initialSecretAnswer)
     const [copiedPrompt, setCopiedPrompt] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [wrongGuessesCount, setWrongGuessesCount] = useState(initialWrongGuessesCount || 0)
+    const [repairAttempts, setRepairAttempts] = useState(0)
 
     // Sledování přiznání AI a stavů
     const [usedPromptCopy, setUsedPromptCopy] = useState(false)
@@ -121,7 +128,13 @@ export default function RiddleCard({
         setMessage(null)
         setIsTypo(false)
 
-        const res = await submitGuessAction(riddleId, guess)
+        const res = await submitGuessAction(
+            riddleId,
+            guess,
+            hints.length,
+            isDrawerRepair,
+            repairAttempts
+        )
         setLoading(false)
 
         if ('error' in res && res.error) {
@@ -136,9 +149,12 @@ export default function RiddleCard({
                 return
             }
 
-            if (res.status === 'SOLVED') {
+            const isCorrect = res.status === 'SOLVED' || ('correct' in res && (res as any).correct === true)
+
+            if (isCorrect) {
                 setIsSolved(true)
-                setScore(res.score || 0)
+                const finalEarned = res.score ?? (isDrawerRepair ? (repairAttempts === 0 ? 50 : 20) : 0)
+                setScore(finalEarned)
                 setSecretAnswer(res.secretAnswer || '')
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
 
@@ -146,7 +162,7 @@ export default function RiddleCard({
                 localStorage.setItem(
                     `hadaci_solved_${riddleId}`,
                     JSON.stringify({
-                        score: res.score || 0,
+                        score: finalEarned,
                         secretAnswer: res.secretAnswer || '',
                         hints: res.hintsRevealed || hints,
                     })
@@ -154,7 +170,18 @@ export default function RiddleCard({
                 return
             }
 
+            if (isDrawerRepair) {
+                setRepairAttempts((prev) => prev + 1)
+                setMessage(
+                    res.message ||
+                    'Vedle! První pokus o nápravu nevyšel, ale můžeš tipovat dál za 20 bodů.'
+                )
+                setGuess('')
+                return
+            }
+
             if (res.status === 'IN_DRAWER') {
+                setWrongGuessesCount((prev) => prev + 1)
                 setIsInDrawer(true) // ZAMKNE HRU PRO DNEŠEK
                 setMessage(res.message || null)
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
@@ -163,7 +190,8 @@ export default function RiddleCard({
             }
 
             if (res.status === 'WRONG') {
-                setMessage(res.message || null)
+                setWrongGuessesCount((prev) => prev + 1)
+                setMessage(res.message || 'Bohužel vedle. Odemkla se ti další stopa (-5 b. za chybný tip).')
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
                 setGuess('')
             }
@@ -172,7 +200,7 @@ export default function RiddleCard({
 
     // Přeskočení na další nápovědu přes serverovou akci
     const handleNextHint = async () => {
-        if (loading || hints.length >= totalHintsCount) return
+        if (loading || hints.length >= totalHintsCount || isDrawerRepair) return
 
         setLoading(true)
         setMessage(null)
@@ -217,18 +245,81 @@ export default function RiddleCard({
     const iban = 'CZ8708000000001388225023'
     const qrCodeUrl = `https://api.paylibo.com/paylibo/generator/image?iban=${iban}&amount=50.00&currency=CZK&message=Kava%20pro%20Hadace`
 
+    // 1. Zjištění celkového počtu stop a parametrů poklesu
+    const totalHints = totalHintsCount || 5
+    const stepPenalty = getStepPenalty(totalHints)
+
+    // 1. Teoretický základ kroku
+    const minBase = totalHints >= 7 ? 10 : 20
+    const baseScore = Math.max(
+        minBase,
+        100 - (hints.length - 1) * stepPenalty
+    )
+
+    // 2. Skutečný možný zisk po odečtení všech chyb (nikdy neklesne pod 5 b., nebo 50 / 20 b. při opravě)
+    const currentPossibleScore = isDrawerRepair
+        ? (repairAttempts === 0 ? 50 : 20)
+        : Math.max(5, baseScore - (wrongGuessesCount * 5))
+
+    // 3. Štítek obtížnosti podle počtu stop
+    const getDifficultyBadge = (count: number) => {
+        if (count >= 8) {
+            return {
+                label: 'Velká výzva',
+                classes: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
+                icon: '🔥',
+            }
+        }
+        if (count >= 6) {
+            return {
+                label: 'Střední',
+                classes: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+                icon: '⚡',
+            }
+        }
+        return {
+            label: 'Klasika',
+            classes: 'bg-slate-800/60 border-slate-700/50 text-slate-400',
+            icon: '🎯',
+        }
+    }
+
+    const difficulty = getDifficultyBadge(totalHints)
+
     return (
         <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
             {/* Horní lišta */}
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-6">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">
-                    {category}
-                </span>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <Lightbulb className="w-4 h-4 text-amber-400" />
-                    <span>
-                        Stopa {hints.length} z {totalHintsCount}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-4 mb-6">
+                {/* Vlevo: Kategorie a štítek obtížnosti */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                        {category}
                     </span>
+                    {isDrawerRepair ? (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold flex items-center gap-1">
+                            🗄️ Oprava ze šuplíku
+                        </span>
+                    ) : (
+                        <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium ${difficulty.classes}`}
+                            title={`Tato hádanka má ${totalHints} postupných stop`}
+                        >
+                            <span>{difficulty.icon}</span>
+                            <span>{difficulty.label}</span>
+                        </span>
+                    )}
+                </div>
+
+                {/* Vpravo: Počítadlo stop a aktuální hodnota hádanky */}
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">
+                        💡 Stopa {hints.length} z {totalHints}
+                    </span>
+                    {!isSolved && (
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold font-mono">
+                            +{currentPossibleScore} b.
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -446,8 +537,8 @@ export default function RiddleCard({
                                     type="text"
                                     value={guess}
                                     onChange={(e) => setGuess(e.target.value)}
-                                    placeholder="Napiš svůj tip (např. Karel Čapek)..."
-                                    disabled={loading}
+                                    placeholder="Zadej svůj tip..."
+                                    disabled={loading || isSolved}
                                     className="w-full flex-1 min-w-0 bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-2.5 sm:py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
                                 />
                                 <button
@@ -460,17 +551,24 @@ export default function RiddleCard({
                                 </button>
                             </div>
 
-                            {hints.length < totalHintsCount && (
-                                <button
-                                    type="button"
-                                    onClick={handleNextHint}
-                                    disabled={loading}
-                                    className="w-full text-center text-xs text-slate-400 hover:text-slate-200 py-2 transition disabled:opacity-50"
-                                >
-                                    {loading
-                                        ? 'Odkrývám další stopu...'
-                                        : 'Zatím nevím, odkrýt další nápovědu bez pokusu'}
-                                </button>
+                            {hints.length < totalHints && !isSolved && !isDrawerRepair && (
+                                <div className="text-center mt-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleNextHint}
+                                        disabled={loading}
+                                        className="text-xs text-slate-400 hover:text-amber-400 transition inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-slate-900 disabled:opacity-50"
+                                    >
+                                        {loading ? (
+                                             <span>Odkrývám další stopu...</span>
+                                        ) : (
+                                            <>
+                                                <span>Zatím nevím, odkrýt další nápovědu bez pokusu</span>
+                                                <span className="text-rose-400/90 font-mono font-semibold">(-{stepPenalty} b.)</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             )}
                         </form>
                     )}

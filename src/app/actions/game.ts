@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { validateAnswer } from '@/lib/game/validator'
+import { calculateRiddleScore, calculateDrawerScore } from '@/lib/scoring'
 
 // Zajistí existenci anonymního uživatele
 async function getOrCreateUser(supabase: any) {
@@ -16,8 +17,15 @@ async function getOrCreateUser(supabase: any) {
     return anonData.user
 }
 
+
 // 1. Odeslání tipu
-export async function submitGuessAction(riddleId: string, guess: string) {
+export async function submitGuessAction(
+    riddleId: string,
+    guess: string,
+    currentStepParam?: number,
+    isDrawerRepair?: boolean,
+    repairAttempts: number = 0
+) {
     const supabase = await createServerSupabaseClient()
     const user = await getOrCreateUser(supabase)
 
@@ -61,6 +69,7 @@ export async function submitGuessAction(riddleId: string, guess: string) {
             .single()
 
         return {
+            correct: true,
             status: 'SOLVED',
             score: state.score_earned || 0,
             secretAnswer: secretData?.secret_answer || '',
@@ -81,7 +90,6 @@ export async function submitGuessAction(riddleId: string, guess: string) {
                 error: 'Tato hádanka je pro dnešek odložena v šuplíku. Další pokus dostaneš až zítra!',
             }
         }
-
     }
 
     const validation = validateAnswer(guess, riddle.secret_answer, riddle.accepted_aliases)
@@ -95,54 +103,103 @@ export async function submitGuessAction(riddleId: string, guess: string) {
         }
     }
 
-    const allHints = riddle.hints as string[]
+    const allHints = (riddle.hints as string[]) || []
+
+    // Případ: Oprava ze šuplíku (druhý den a později)
+    const isRepair = Boolean(isDrawerRepair || state.status === 'IN_DRAWER')
+    if (isRepair) {
+        const finalScore = calculateDrawerScore(repairAttempts)
+
+        if (validation.isCorrect) {
+            await supabase
+                .from('user_riddle_state')
+                .update({
+                    status: 'SOLVED',
+                    score_earned: finalScore,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('user_id', user.id)
+                .eq('riddle_id', riddleId)
+
+            return {
+                correct: true,
+                status: 'SOLVED',
+                score: finalScore,
+                secretAnswer: riddle.secret_answer,
+                hintsRevealed: allHints,
+            }
+        } else {
+            // Pouze zaznamenáme chybu v historii, hádanka zůstává k dořešení za 20 b.
+            const newWrongCount = (state.wrong_guesses_count || 0) + 1
+            await supabase
+                .from('user_riddle_state')
+                .update({
+                    wrong_guesses_count: newWrongCount,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('user_id', user.id)
+                .eq('riddle_id', riddleId)
+
+            return {
+                correct: false,
+                status: 'WRONG',
+                nextScore: 20,
+                message: 'Vedle! První pokus o nápravu nevyšel, ale můžeš tipovat dál za 20 bodů.',
+                hintsRevealed: allHints,
+            }
+        }
+    }
+
     const totalHints = allHints.length
+    const currentState = state
+    const currentStep = currentState.current_step || 1
 
     // Případ B: Správná odpověď -> Výhra!
     if (validation.isCorrect) {
-        const penaltyPerHint = 100 / totalHints
-        const hintPenalty = (state.current_step - 1) * penaltyPerHint
-        const wrongPenalty = state.wrong_guesses_count * 5
-        const finalScore = Math.max(10, Math.round(100 - hintPenalty - wrongPenalty))
+        const score = calculateRiddleScore(totalHints, currentStep, currentState.wrong_guesses_count)
 
         await supabase
             .from('user_riddle_state')
             .update({
                 status: 'SOLVED',
-                score_earned: finalScore,
+                score_earned: score,
                 updated_at: new Date().toISOString(),
             })
-            .eq('id', state.id)
+            .eq('id', currentState.id)
 
         return {
+            correct: true,
             status: 'SOLVED',
-            score: finalScore,
+            score: score,
             secretAnswer: riddle.secret_answer,
-            hintsRevealed: allHints.slice(0, state.current_step),
+            hintsRevealed: allHints.slice(0, currentStep),
         }
     }
 
     // Případ C: Špatná odpověď -> Posun na další nápovědu + penalizace
-    const nextStep = state.current_step + 1
-    const isOutOfHints = nextStep > totalHints
+    const newWrongCount = (currentState.wrong_guesses_count || 0) + 1
+    const isLastHint = currentStep >= totalHints
 
     await supabase
         .from('user_riddle_state')
         .update({
-            current_step: Math.min(nextStep, totalHints),
-            wrong_guesses_count: state.wrong_guesses_count + 1,
-            status: isOutOfHints ? 'IN_DRAWER' : 'IN_PROGRESS',
+            wrong_guesses_count: newWrongCount,
+            current_step: isLastHint ? currentStep : currentStep + 1,
+            status: isLastHint ? 'IN_DRAWER' : 'IN_PROGRESS',
             updated_at: new Date().toISOString(),
         })
-        .eq('id', state.id)
+        .eq('id', currentState.id)
+
+    const nextStep = isLastHint ? currentStep : currentStep + 1
 
     return {
-        status: isOutOfHints ? 'IN_DRAWER' : 'WRONG',
-        message: isOutOfHints
+        correct: false,
+        status: isLastHint ? 'IN_DRAWER' : 'WRONG',
+        message: isLastHint
             ? 'Došly ti nápovědy i pokusy! Hádanka byla odložena do šuplíku. Znovu bádat můžeš zase zítra.'
             : 'Bohužel vedle. Odemkla se ti další stopa (-5 b. za chybný tip).',
-        currentStep: Math.min(nextStep, totalHints),
-        hintsRevealed: allHints.slice(0, Math.min(nextStep, totalHints)),
+        currentStep: nextStep,
+        hintsRevealed: allHints.slice(0, nextStep),
     }
 }
 

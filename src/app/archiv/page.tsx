@@ -70,7 +70,30 @@ async function ArchiveList() {
                 : todayStr
               const isLockedToday = lastUpdate === todayStr
 
-              return (
+              return isLockedToday ? (
+                <div
+                  key={`drawer-${riddle.id}`}
+                  className="bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-2xl flex items-center justify-between opacity-75 cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center shrink-0">
+                      <Lock className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-300">
+                        {riddle.category}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {formatCzechDate(riddle.publish_date)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-xl border bg-slate-800/80 border-slate-700 text-slate-400">
+                    Zamčeno do zítřka 🔒
+                  </span>
+                </div>
+              ) : (
                 <Link
                   key={`drawer-${riddle.id}`}
                   href={isToday ? '/' : `/hadanka/${riddle.id}`}
@@ -79,11 +102,7 @@ async function ArchiveList() {
                   <div className="bg-slate-900/90 border border-amber-500/30 hover:border-amber-400/60 p-3.5 rounded-2xl flex items-center justify-between transition">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                        {isLockedToday ? (
-                          <Lock className="w-4 h-4 text-amber-400" />
-                        ) : (
-                          <FolderArchive className="w-4 h-4 text-amber-400 group-hover:scale-110 transition" />
-                        )}
+                        <FolderArchive className="w-4 h-4 text-amber-400 group-hover:scale-110 transition" />
                       </div>
                       <div>
                         <div className="text-xs font-bold text-white group-hover:text-amber-300 transition">
@@ -95,12 +114,8 @@ async function ArchiveList() {
                       </div>
                     </div>
 
-                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-xl border ${
-                      isLockedToday
-                        ? 'bg-slate-800/80 border-slate-700 text-slate-400'
-                        : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                    }`}>
-                      {isLockedToday ? 'Zamčeno do zítřka' : 'Zkusit znovu 🔓'}
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-xl border bg-amber-500/20 border-amber-500/40 text-amber-300 group-hover:bg-amber-400 group-hover:text-slate-950 transition">
+                      Zkusit znovu 🔓
                     </span>
                   </div>
                 </Link>

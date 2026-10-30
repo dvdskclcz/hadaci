@@ -1,4 +1,4 @@
-export const APP_VERSION = 'v1.3.0'
+export const APP_VERSION = 'v1.4.0'
 
 export type ReleaseNote = {
   version: string
@@ -8,6 +8,20 @@ export type ReleaseNote = {
 }
 
 export const CHANGELOG: ReleaseNote[] = [
+  {
+    version: 'v1.4.0',
+    date: '30. října 2026',
+    title: 'Herní mechanika, opravy ze šuplíku a dynamické bodování',
+    highlights: [
+      'Dynamické bodování pro 5 až 10 nápověd (vždy férový strop 100 b. a garance min. 5 b.)',
+      'Průběžný odečet penalizace za chybný tip (-5 b.) zobrazený přímo v reálném čase',
+      'Plnohodnotný režim odvety v Šuplíku (opravný pokus za 50 b., další za fixních 20 b.)',
+      'Denní zámek neuhodnutých hádanek do půlnoci s vizuální indikací',
+      'Štítky obtížnosti podle délky hádanky (🎯 Klasika, ⚡ Střední, 🔥 Velká výzva)',
+      'Neutrální nápovědné pole bez nechtěných spoilerů',
+      'Sjednocení databázového schématu a oprava načítání AI modelů',
+    ],
+  },
   {
     version: 'v1.3.0',
     date: '29. října 2026',

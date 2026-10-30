@@ -46,32 +46,36 @@ export default function RulesModal() {
 
         {/* Rolovací obsah – min-h-0 a flex-1 umožní čistý scroll na malých výškách */}
         <div className="space-y-3 overflow-y-auto pr-1 text-xs text-slate-300 leading-relaxed min-h-0 flex-1">
+          {/* 1. Stopy a obtížnost */}
           <div className="flex items-start gap-3 bg-slate-950/50 p-3 rounded-2xl border border-slate-800/60">
             <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-100 block mb-0.5">5 postupných stop</strong>
-              Hledáme českou osobnost, památku, vynález či fenomén. Začínáš s nejtěžší indicií.
+              <strong className="text-slate-100 block mb-0.5">5 až 10 postupných stop</strong>
+              Hledáme českou osobnost, dílo, vynález či fenomén. Začínáš nejtěžší stopou, obtížnost poznáš podle štítku (Klasika / Střední / Velká výzva).
             </div>
           </div>
 
+          {/* 2. Bodování, pokuty a garantované minimum */}
           <div className="flex items-start gap-3 bg-slate-950/50 p-3 rounded-2xl border border-slate-800/60">
             <Trophy className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-100 block mb-0.5">Čím méně nápověd, tím víc bodů</strong>
-              Uhádnutí na 1. stopu = plný počet bodů. Každá odkrytá nápověda nebo špatný tip snižuje zisk.
+              <strong className="text-slate-100 block mb-0.5">Férové bodování (strop 100 b.)</strong>
+              Vyřešení na 1. stopu = 100 bodů. Každá další odkrytá stopa snižuje základní hodnotu a každý špatný tip stojí 5 bodů. Za úspěšné vyluštění ale vždy získáš minimálně 5 bodů!
             </div>
           </div>
 
+          {/* 3. AI souboj */}
           <div className="flex items-start gap-3 bg-slate-950/50 p-3 rounded-2xl border border-slate-800/60">
             <Bot className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-100 block mb-0.5">Otestuj umělou inteligenci</strong>
-              Kopíruj stopy jako prompt a zjisti, zda je ChatGPT, Gemini nebo Claude bystřejší než ty.
+              <strong className="text-slate-100 block mb-0.5">Změř síly s umělou inteligencí</strong>
+              Kopíruj indicie jako prompt do ChatGPT, Gemini či Claude. Po uhádnutí označ, zda jsi luštil čistou hlavou, nebo s pomocí AI.
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-500 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-center">
-            💡 Nová hádanka vychází každý den o půlnoci. Neuhodnuté kousky najdeš v šuplíku.
+          {/* Info box o Šuplíku */}
+          <div className="text-[11px] text-slate-400 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-center leading-normal">
+            💡 Nová hádanka vychází o půlnoci. Pokud vyčerpáš všechny pokusy, hádanka se zamkne do <strong>Šuplíku</strong> pro pozdější dořešení.
           </div>
         </div>
 
