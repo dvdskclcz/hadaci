@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { connection } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { Trophy, Bot, Brain, Sparkles, MessageSquare } from 'lucide-react'
+import { Bot, Brain, MessageSquare } from 'lucide-react'
+import LeaderboardPlayerTable from '@/components/LeaderboardPlayerTable'
 
 async function LeaderboardTables() {
     await connection()
@@ -12,11 +13,34 @@ async function LeaderboardTables() {
         .from('v_ai_model_stats')
         .select('*')
 
-    // 2. Načteme žebříček hráčů
+    // 2. Načteme žebříček hráčů z pohledu
     const { data: players } = await supabase
         .from('v_leaderboard_players')
         .select('*')
-        .limit(10)
+        .limit(20)
+
+    // 3. Načteme profily s jejich sériemi
+    const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nickname, daily_streak_current, daily_streak_max, solve_streak_current, solve_streak_max')
+
+    // Propojíme data z pohledu s profily
+    const profileMap = new Map<string, any>()
+    profiles?.forEach((prof: any) => {
+        if (prof.id) profileMap.set(prof.id, prof)
+        if (prof.nickname) profileMap.set(prof.nickname, prof)
+    })
+
+    const enrichedPlayers = (players || []).map((p: any) => {
+        const prof = profileMap.get(p.user_id) || profileMap.get(p.id) || profileMap.get(p.nickname)
+        return {
+            ...p,
+            daily_streak_current: p.daily_streak_current ?? prof?.daily_streak_current ?? 0,
+            daily_streak_max: p.daily_streak_max ?? prof?.daily_streak_max ?? 0,
+            solve_streak_current: p.solve_streak_current ?? prof?.solve_streak_current ?? 0,
+            solve_streak_max: p.solve_streak_max ?? prof?.solve_streak_max ?? 0,
+        }
+    })
 
     return (
         <div className="space-y-8">
@@ -75,55 +99,8 @@ async function LeaderboardTables() {
                 </div>
             </div>
 
-            {/* 2. Karta: Nejlepší hádači */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl text-left">
-                <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-                        <Trophy className="w-4 h-4" />
-                    </div>
-                    <div>
-                        <h2 className="text-base font-bold text-white">Top Hádači</h2>
-                        <p className="text-[11px] text-slate-400">Hráči s nejvyšším počtem bodů</p>
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto mt-4">
-                    <table className="w-full text-xs text-left">
-                        <thead>
-                            <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase font-bold">
-                                <th className="py-2.5 px-3">#</th>
-                                <th className="py-2.5 px-3">Hráč</th>
-                                <th className="py-2.5 px-3 text-center">Uhádnuto</th>
-                                <th className="py-2.5 px-3 text-right">Celkem bodů</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/60">
-                            {players && players.length > 0 ? (
-                                players.map((p: any, idx: number) => (
-                                    <tr key={idx} className="hover:bg-slate-800/30 transition">
-                                        <td className="py-3 px-3 font-bold text-slate-500 w-8">
-                                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}
-                                        </td>
-                                        <td className="py-3 px-3 font-semibold text-slate-200">
-                                            {p.nickname}
-                                        </td>
-                                        <td className="py-3 px-3 text-center text-slate-400">{p.solved_count}</td>
-                                        <td className="py-3 px-3 text-right font-bold text-amber-400">
-                                            {p.total_score} b.
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={4} className="py-6 text-center text-slate-500 italic">
-                                        Zatím nikdo v síni slávy. Zahraj si hádanku dne a zapiš se sem!
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            {/* 2. Karta: Nejlepší hádači se sloupci sérií a přepínačem Skóre vs. Série */}
+            <LeaderboardPlayerTable players={enrichedPlayers} />
 
             {/* 3. Upoutávka na Režim 2 (Návnada pro testery) */}
             <div className="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/20 rounded-3xl p-6 text-left relative overflow-hidden">

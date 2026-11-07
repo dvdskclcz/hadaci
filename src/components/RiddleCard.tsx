@@ -9,6 +9,7 @@ import {
     submitGuessAction,
     requestNextHintAction,
     recordAiUsageAction,
+    getUserStreaksAction,
 } from '@/app/actions/game'
 import {
     Sparkles,
@@ -72,6 +73,10 @@ export default function RiddleCard({
     const [loading, setLoading] = useState(false)
     const [wrongGuessesCount, setWrongGuessesCount] = useState(initialWrongGuessesCount || 0)
     const [repairAttempts, setRepairAttempts] = useState(0)
+    const [streaks, setStreaks] = useState<{
+        daily_streak_current: number
+        solve_streak_current: number
+    } | null>(null)
 
     // Sledování přiznání AI a stavů
     const [usedPromptCopy, setUsedPromptCopy] = useState(false)
@@ -107,6 +112,20 @@ export default function RiddleCard({
             }
         }
     }, [riddleId, isSolved, selectedAi])
+
+    // Načtení sérií při zobrazení vyřešené hádanky
+    useEffect(() => {
+        if (isSolved && !streaks) {
+            getUserStreaksAction().then((data) => {
+                if (data && (data.dailyStreak > 0 || data.solveStreak > 0)) {
+                    setStreaks({
+                        daily_streak_current: data.dailyStreak,
+                        solve_streak_current: data.solveStreak,
+                    })
+                }
+            })
+        }
+    }, [isSolved])
 
     // Zkopírování formátovaného promptu pro AI
     const handleCopyPrompt = () => {
@@ -157,6 +176,9 @@ export default function RiddleCard({
                 setScore(finalEarned)
                 setSecretAnswer(res.secretAnswer || '')
                 if (res.hintsRevealed) setHints(res.hintsRevealed)
+                if ('streaks' in res && res.streaks) {
+                    setStreaks(res.streaks)
+                }
 
                 // Uložíme vyřešení pro anonymního hráče i do localStorage
                 localStorage.setItem(
@@ -342,6 +364,21 @@ export default function RiddleCard({
                                 <NicknameEditor />
                             </div>
                         </div>
+
+                        {/* Přehled aktuálních sérií */}
+                        {streaks && (
+                            <div className="mt-4 p-3 rounded-2xl bg-slate-950 border border-slate-800 text-center max-w-sm mx-auto">
+                                <div className="text-xs text-slate-400 font-medium">Tvé aktuální série</div>
+                                <div className="flex justify-center gap-6 mt-1.5 font-bold text-sm">
+                                    <span className="flex items-center gap-1.5 text-amber-400" title="Denní kalendářní série">
+                                        🔥 {streaks.daily_streak_current} {streaks.daily_streak_current === 1 ? 'den' : streaks.daily_streak_current >= 2 && streaks.daily_streak_current <= 4 ? 'dny' : 'dní'}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-emerald-400" title="Mistrovská série bez zaváhání">
+                                        🎯 {streaks.solve_streak_current} v řadě
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Přiznání AI */}

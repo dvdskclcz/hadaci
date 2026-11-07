@@ -7,6 +7,7 @@ import RulesModal from '@/components/RulesModal'
 import TopicSuggestionModal from '@/components/TopicSuggestionModal'
 import UserNav from '@/components/UserNav'
 import NicknameEditor from '@/components/NicknameEditor'
+import StreakBadges from '@/components/StreakBadges'
 
 export default function Navbar() {
   return (
@@ -61,6 +62,8 @@ export default function Navbar() {
           <div className="hidden sm:block">
             <ChangelogModal />
           </div>
+
+          <StreakBadges />
 
           <UserNav />
 

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { validateAnswer } from '@/lib/game/validator'
 import { calculateRiddleScore, calculateDrawerScore } from '@/lib/scoring'
+import { calculateNewStreaks } from '@/lib/streaks'
 
 // Zajistí existenci anonymního uživatele
 async function getOrCreateUser(supabase: any) {
@@ -17,6 +18,58 @@ async function getOrCreateUser(supabase: any) {
     return anonData.user
 }
 
+// Pomocná funkce pro vyhodnocení a uložení sérií
+async function updateUserStreaks(
+    supabase: any,
+    userId: string,
+    isFirstAttempt: boolean,
+    isDailyRiddle: boolean,
+    isSolved: boolean,
+    todayDateStr: string
+) {
+    console.log("--> UPDATE STREAKS VOLÁNO:", { userId, isFirstAttempt, isDailyRiddle, isSolved });
+
+    if (!isFirstAttempt) return null
+
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('daily_streak_current, daily_streak_max, last_daily_date, solve_streak_current, solve_streak_max')
+            .eq('id', userId)
+            .maybeSingle()
+
+        const currentProfile = {
+            daily_streak_current: profile?.daily_streak_current ?? 0,
+            daily_streak_max: profile?.daily_streak_max ?? 0,
+            last_daily_date: profile?.last_daily_date ?? null,
+            solve_streak_current: profile?.solve_streak_current ?? 0,
+            solve_streak_max: profile?.solve_streak_max ?? 0,
+        }
+
+        const newStreaks = calculateNewStreaks(currentProfile, {
+            userId,
+            isFirstAttempt,
+            isDailyRiddle,
+            isSolved,
+            todayDateStr,
+        })
+
+        if (newStreaks) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .update(newStreaks)
+                .eq('id', userId)
+                .select()
+
+            console.log("--> VÝSLEDEK UPDATE V PROFILES:", { data, error })
+        }
+
+        return newStreaks
+    } catch (err) {
+        console.warn('Nepodařilo se aktualizovat série v profiles:', err)
+        return null
+    }
+}
 
 // 1. Odeslání tipu
 export async function submitGuessAction(
@@ -106,6 +159,7 @@ export async function submitGuessAction(
     const allHints = (riddle.hints as string[]) || []
 
     // Případ: Oprava ze šuplíku (druhý den a později)
+    // Série se při opravě ze šuplíku neaktualizují (pravidlo "první pokus rozhoduje")
     const isRepair = Boolean(isDrawerRepair || state.status === 'IN_DRAWER')
     if (isRepair) {
         const finalScore = calculateDrawerScore(repairAttempts)
@@ -154,7 +208,7 @@ export async function submitGuessAction(
     const currentState = state
     const currentStep = currentState.current_step || 1
 
-    // Případ B: Správná odpověď -> Výhra!
+    // Případ B: Správná odpověď -> Výhra na 1. ostrý pokus!
     if (validation.isCorrect) {
         const score = calculateRiddleScore(totalHints, currentStep, currentState.wrong_guesses_count)
 
@@ -167,12 +221,26 @@ export async function submitGuessAction(
             })
             .eq('id', currentState.id)
 
+        // Aktualizace sérií pro první dokončení
+        const todayDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+        const isDailyRiddle = riddle.publish_date === todayDateStr
+
+        const streaks = await updateUserStreaks(
+            supabase,
+            user.id,
+            true, // isFirstAttempt
+            isDailyRiddle,
+            true, // isSolved
+            todayDateStr
+        )
+
         return {
             correct: true,
             status: 'SOLVED',
             score: score,
             secretAnswer: riddle.secret_answer,
             hintsRevealed: allHints.slice(0, currentStep),
+            streaks,
         }
     }
 
@@ -191,6 +259,21 @@ export async function submitGuessAction(
         .eq('id', currentState.id)
 
     const nextStep = isLastHint ? currentStep : currentStep + 1
+
+    // Pokud došly nápovědy i pokusy při 1. pokusu -> prohra, solve_streak padá na 0
+    if (isLastHint) {
+        const todayDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+        const isDailyRiddle = riddle.publish_date === todayDateStr
+
+        await updateUserStreaks(
+            supabase,
+            user.id,
+            true, // isFirstAttempt
+            isDailyRiddle,
+            false, // isSolved
+            todayDateStr
+        )
+    }
 
     return {
         correct: false,
@@ -392,4 +475,27 @@ export async function submitTopicSuggestionAction(
 
     if (error) return { error: error.message }
     return { success: true }
+}
+
+// 8. Získání aktuálních sérií hráče
+export async function getUserStreaksAction() {
+    const supabase = await createServerSupabaseClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return null
+
+    const { data } = await supabase
+        .from('profiles')
+        .select('daily_streak_current, daily_streak_max, solve_streak_current, solve_streak_max')
+        .eq('id', user.id)
+        .maybeSingle()
+
+    return {
+        dailyStreak: data?.daily_streak_current ?? 0,
+        dailyStreakMax: data?.daily_streak_max ?? 0,
+        solveStreak: data?.solve_streak_current ?? 0,
+        solveStreakMax: data?.solve_streak_max ?? 0,
+    }
 }
