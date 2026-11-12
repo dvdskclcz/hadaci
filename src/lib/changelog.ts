@@ -1,4 +1,4 @@
-export const APP_VERSION = 'v1.4.0'
+export const APP_VERSION = 'v1.5.0'
 
 export type ReleaseNote = {
   version: string
@@ -8,6 +8,19 @@ export type ReleaseNote = {
 }
 
 export const CHANGELOG: ReleaseNote[] = [
+  {
+    version: 'v1.5.0',
+    date: '7. listopadu 2026',
+    title: 'Herní šňůry, odznaky sérií a ochrana férové hry',
+    highlights: [
+      'Denní kalendářní série (🔥) sledující nepřerušenou každodenní účast',
+      'Mistrovská série (🎯) počítající úspěšně vyřešené hádanky v řadě bez zaváhání',
+      'Vizuální odznaky aktivních sérií přímo v horní liště u profilu hráče',
+      'Přehled prodloužení sérií zobrazený ve vítězném okně po vyluštění',
+      'Striktní pravidlo prvního pokusu chránící série před obcházením v Šuplíku',
+      'Optimalizace reaktivity v RiddleCard a vyčištění serverových akcí',
+    ],
+  },
   {
     version: 'v1.4.0',
     date: '30. října 2026',
