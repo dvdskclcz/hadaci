@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /**
- * Synchronizační skript pro herní mód „Detektivní výslech“ (Hádači.cz)
+ * Inkrementální synchronizační skript pro herní mód „Detektivní výslech“ (Hádači.cz)
  * 
  * Načte případy z content/vyslech/NNN-slug/case.json,
- * vytvoří vektorové embeddingy přes OpenAI (text-embedding-3-small)
- * a nahraje je do Supabase tabulek detective_cases a detective_facts.
+ * spočítá SHA-256 hash obsahu a porovná jej s content_hash v Supabase.
+ * Pokud se hash shoduje a není předán příznak --force, případ přeskočí bez volání OpenAI.
+ * Podporuje filtrování konkrétního případu (např. "005" nebo "005-titanic") a vlajku --force.
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { createClient } from '@supabase/supabase-js'
 
@@ -52,7 +54,7 @@ async function generateEmbeddings(texts, apiKey) {
 
     for (let i = 0; i < texts.length; i += BATCH_SIZE) {
         const batch = texts.slice(i, i + BATCH_SIZE)
-        
+
         const response = await fetch('https://api.openai.com/v1/embeddings', {
             method: 'POST',
             headers: {
@@ -83,8 +85,20 @@ async function generateEmbeddings(texts, apiKey) {
 // --- 3. Hlavní běh synchronizace ---
 async function main() {
     console.log('\n============================================================')
-    console.log('🕵️‍♂️  HÁDAČI.CZ – Synchronizace spisů pro Detektivní výslech')
+    console.log('🕵️‍♂️  HÁDAČI.CZ – Inkrementální synchronizace detektivních spisů')
     console.log('============================================================\n')
+
+    // Zpracování argumentů z příkazové řádky
+    const rawArgs = process.argv.slice(2)
+    const isForce = rawArgs.includes('--force')
+    const targetFilters = rawArgs.filter((arg) => !arg.startsWith('--'))
+
+    if (isForce) {
+        console.log('⚡ Aktivován režim --force: přepočítají se všechny spisy bez ohledu na shodu hashe.\n')
+    }
+    if (targetFilters.length > 0) {
+        console.log(`🎯 Aktivován filtr případů: "${targetFilters.join(', ')}"\n`)
+    }
 
     const { SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY } = loadEnvLocal()
 
@@ -116,10 +130,23 @@ async function main() {
 
     // Najdeme všechny podsložky s case.json
     const entries = fs.readdirSync(vyslechDir, { withFileTypes: true })
-    const caseDirs = entries
+    let caseDirs = entries
         .filter((e) => e.isDirectory() && !e.name.startsWith('_'))
         .map((e) => path.join(vyslechDir, e.name))
         .filter((dir) => fs.existsSync(path.join(dir, 'case.json')))
+
+    // Aplikace filtru na slug / složku
+    if (targetFilters.length > 0) {
+        caseDirs = caseDirs.filter((dir) => {
+            const folderName = path.basename(dir).toLowerCase()
+            return targetFilters.some((f) => folderName.includes(f.toLowerCase()))
+        })
+
+        if (caseDirs.length === 0) {
+            console.log(`⚠️  Žádný případ v content/vyslech/ neodpovídá zadanému filtru: [${targetFilters.join(', ')}].`)
+            return
+        }
+    }
 
     if (caseDirs.length === 0) {
         console.log('ℹ️  Nebyly nalezeny žádné složky s case.json v content/vyslech/.')
@@ -130,12 +157,28 @@ async function main() {
 
     let totalCasesSynced = 0
     let totalFactsSynced = 0
+    let totalSkipped = 0
+
+    // Zjistíme, zda v databázi existuje sloupec content_hash
+    let hasHashColumn = true
+    const { error: testHashErr } = await supabase
+        .from('detective_cases')
+        .select('content_hash')
+        .limit(1)
+
+    if (testHashErr && (testHashErr.message?.includes('content_hash') || testHashErr.code === '42703')) {
+        hasHashColumn = false
+        console.warn('⚠️  Upozornění: Sloupec `content_hash` zatím v tabulce `detective_cases` neexistuje.')
+        console.warn('   Pro plnou podporu inkrementálního přeskočení přidejte sloupec do Supabase:')
+        console.warn('   ALTER TABLE detective_cases ADD COLUMN IF NOT EXISTS content_hash TEXT;\n')
+    }
 
     for (const dir of caseDirs) {
         const casePath = path.join(dir, 'case.json')
         const rawContent = fs.readFileSync(casePath, 'utf8')
-        let caseData
+        const contentHash = crypto.createHash('sha256').update(rawContent, 'utf8').digest('hex')
 
+        let caseData
         try {
             caseData = JSON.parse(rawContent)
         } catch (err) {
@@ -144,17 +187,43 @@ async function main() {
             continue
         }
 
-        console.log(`🔍 Zpracovávám případ: [${caseData.slug}] "${caseData.secret_answer}"`)
-
         // 1. Validace povinných polí
         const required = ['slug', 'publish_date', 'entity_type', 'secret_answer', 'core_facts', 'key_facts', 'anticipated_qa']
         const missing = required.filter((field) => !caseData[field])
         if (missing.length > 0) {
-            console.error(`   ⚠️  Přeskakuji: chybí povinná pole [${missing.join(', ')}]`)
+            console.error(`⚠️  Přeskakuji [${caseData.slug || path.basename(dir)}]: chybí povinná pole [${missing.join(', ')}]`)
             continue
         }
 
-        // 2. Příprava seznamu faktů ze 3 vrstev
+        // 2. Inkrementální kontrola hashe proti databázi
+        let existingCase = null
+        if (hasHashColumn) {
+            const { data: dbCase } = await supabase
+                .from('detective_cases')
+                .select('id, slug, content_hash')
+                .eq('slug', caseData.slug)
+                .maybeSingle()
+
+            existingCase = dbCase
+        } else {
+            const { data: dbCase } = await supabase
+                .from('detective_cases')
+                .select('id, slug')
+                .eq('slug', caseData.slug)
+                .maybeSingle()
+
+            existingCase = dbCase
+        }
+
+        if (existingCase && hasHashColumn && existingCase.content_hash === contentHash && !isForce) {
+            console.log(`⏭️  Přeskakuji [${caseData.slug}] (beze změn, hash: ${contentHash.slice(0, 8)}...)`)
+            totalSkipped += 1
+            continue
+        }
+
+        console.log(`🔍 Zpracovávám případ: [${caseData.slug}] "${caseData.secret_answer}"`)
+
+        // 3. Příprava seznamu faktů ze 3 vrstev
         const factsToProcess = []
 
         // Vrstva A: Základní rozřazovací fakta
@@ -183,22 +252,26 @@ async function main() {
 
         console.log(`   📝 Připraveno celkem ${factsToProcess.length} faktů (Core: ${caseData.core_facts.length}, Key: ${caseData.key_facts.length}, QA: ${caseData.anticipated_qa.length})`)
 
-        // 3. Upsert do detective_cases
+        // 4. Upsert do detective_cases včetně content_hash
+        const casePayload = {
+            slug: caseData.slug,
+            publish_date: caseData.publish_date,
+            entity_type: caseData.entity_type,
+            difficulty: caseData.difficulty || 'medium',
+            secret_answer: caseData.secret_answer,
+            accepted_synonyms: caseData.accepted_synonyms || caseData.aliases || [],
+            initial_clue: caseData.initial_clue || '',
+            is_active: caseData.is_active !== undefined ? caseData.is_active : true,
+            updated_at: new Date().toISOString(),
+        }
+
+        if (hasHashColumn) {
+            casePayload.content_hash = contentHash
+        }
+
         const { data: upsertedCase, error: caseErr } = await supabase
             .from('detective_cases')
-            .upsert(
-                {
-                    slug: caseData.slug,
-                    publish_date: caseData.publish_date,
-                    entity_type: caseData.entity_type,
-                    difficulty: caseData.difficulty || 'medium',
-                    secret_answer: caseData.secret_answer,
-                    accepted_synonyms: caseData.accepted_synonyms || [],
-                    initial_clue: caseData.initial_clue || '',
-                    updated_at: new Date().toISOString(),
-                },
-                { onConflict: 'slug' }
-            )
+            .upsert(casePayload, { onConflict: 'slug' })
             .select('id, slug')
             .single()
 
@@ -212,7 +285,7 @@ async function main() {
 
         const caseId = upsertedCase.id
 
-        // 4. Vygenerování embeddingů přes OpenAI
+        // 5. Vygenerování embeddingů přes OpenAI
         console.log(`   🧠 Generuji vektorové embeddingy přes OpenAI (text-embedding-3-small)...`)
         let embeddings
         try {
@@ -223,7 +296,7 @@ async function main() {
             continue
         }
 
-        // 5. Smazání starých faktů pro daný případ
+        // 6. Smazání starých faktů pro daný případ
         const { error: delErr } = await supabase
             .from('detective_facts')
             .delete()
@@ -233,7 +306,7 @@ async function main() {
             console.error(`   ⚠️  Varování při mazání starých faktů:`, delErr.message)
         }
 
-        // 6. Vložení nových faktů s vektory
+        // 7. Vložení nových faktů s vektory
         const factsPayload = factsToProcess.map((f, idx) => ({
             case_id: caseId,
             fact_type: f.fact_type,
@@ -264,7 +337,10 @@ async function main() {
     }
 
     console.log('============================================================')
-    console.log(`🎉 HOTOVO! Synchronizováno ${totalCasesSynced} případů a ${totalFactsSynced} vektorových faktů.`)
+    console.log(`🎉 HOTOVO! Synchronizováno: ${totalCasesSynced}, Přeskočeno beze změn: ${totalSkipped}`)
+    if (totalCasesSynced > 0) {
+        console.log(`   Celkem nově uloženo ${totalFactsSynced} vektorových faktů do databáze.`)
+    }
     console.log('============================================================\n')
 }
 
@@ -272,4 +348,3 @@ main().catch((err) => {
     console.error('\n💥 Neošetřená chyba synchronizace:', err)
     process.exit(1)
 })
-

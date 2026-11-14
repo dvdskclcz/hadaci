@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS detective_cases (
     secret_answer TEXT NOT NULL,
     accepted_synonyms JSONB NOT NULL DEFAULT '[]'::jsonb,
     initial_clue TEXT NOT NULL,
+    content_hash TEXT,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
