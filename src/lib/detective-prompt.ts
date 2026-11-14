@@ -32,23 +32,27 @@ STRIKTNÍ PRAVIDLA VYHODNOCOVÁNÍ:
    - Geografické a územní otázky (např. „Narodil se v Česku?“, „Pochází z Česka?“, „Je to v ČR?“, „Stalo se to v Německu?“, „Je to v Polsku?“) vyhodnocuj podle území SOUČASNÉHO státu, i když k události došlo v minulosti (např. za Rakouska-Uherska, Československa nebo Polského království). Pokud se pojem vztahuje k místu ležícímu na území dnešního státu, odpověz "ANO".
    - Přísně historicky vyhodnocuj pouze otázky, které se výslovně ptají na konkrétní historický státní útvar nebo režim (např. „Narodil se za Rakouska-Uherska?“, „Žil za první republiky?“, „Stalo se to v Československu?“).
 
-4. KDY ODPOVĚDĚT "NE" VS. "NELZE_OVERIT":
+4. LOGIKA MNOŽIN A VÝČTŮ ('v některém z...', 'patří mezi...', 'je jedním z...'):
+   - Aby byla odpověď "ANO", stačí, když platí ALESPOŇ JEDNA položka z dané množiny či kategorie.
+   - Příklad: Sousední státy ČR jsou {Polsko, Německo, Slovensko, Rakousko}. Pokud spis uvádí Polsko, entita se nachází v NĚKTERÉM ze sousedních států ČR -> verdikt MUSÍ být "ANO". Skutečnost, že se nenachází v ostatních třech státech, NENÍ důvodem pro "NE"!
+
+5. KDY ODPOVĚDĚT "NE" VS. "NELZE_OVERIT":
    - "NE" použij VÝHRADNĚ tehdy, když tvrzení v otázce PROKAZATELNĚ ODPORUJE faktům ve spisu nebo jejich logickým a deduktivním důsledkům (např. v otázce je jiné pohlaví, jiné století, jiný kontinent, popřený fakt, nebo spis výslovně říká, že entita danou věc neudělala či danou vlastnost nemá).
    - "NELZE_OVERIT" použij tehdy, když se o dané věci ze spisu a z něj plynoucích obecných znalostí nedá nic vyvodit a pravdivost tvrzení nelze spolehlivě potvrdit ani vyvrátit.
 
-5. LOGICKÝ SOUČIN (SLOŽENÉ PODMÍNKY):
+6. LOGICKÝ SOUČIN (SLOŽENÉ PODMÍNKY):
    - Pokud otázka spojuje více podmínek spojkou "a" / "i" (např. "Je to spisovatel a žil v 19. století?") a alespoň jedna z těchto podmínek prokazatelně neplatí ("NE"), odpověz "NE". Pokud jedna platí a druhá je neověřitelná, odpověz "NELZE_OVERIT".
 
-6. POTVRZENÍ:
+7. POTVRZENÍ:
    - Pokud je tvrzení ve spisu přímo potvrzeno nebo z něj logicky/geograficky/časově vyplývá, odpověz "ANO".
 
 VYŠETŘOVACÍ SPIS (FAKTA O TAJNÉM POJMU):
 {{FACTS}}
 
-Vrať JSON ve formátu:
+DODRŽ PŘESNÉ POŘADÍ KLÍČŮ V JSON (klíč "reasoning" MUSÍ být uveden jako první pro interní logické odvození, teprve poté "verdict"):
 {
-  "verdict": "ANO" | "NE" | "NELZE_OVERIT",
-  "reason": "stručné zdůvodnění"
+  "reasoning": "krátké interní logické odvození krok za krokem",
+  "verdict": "ANO" | "NE" | "NELZE_OVERIT"
 }`
 
 /**
@@ -57,4 +61,3 @@ Vrať JSON ve formátu:
 export function getDetectiveRefereeSystemPrompt(contextFacts: string): string {
     return DETECTIVE_REFEREE_SYSTEM_PROMPT.replace('{{FACTS}}', contextFacts)
 }
-

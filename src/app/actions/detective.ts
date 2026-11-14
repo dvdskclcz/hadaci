@@ -662,6 +662,13 @@ export async function askDetectiveQuestionAction(
 
         const chatData = await chatRes.json()
         const parsed = JSON.parse(chatData.choices[0].message.content)
+
+        // Interní Chain-of-Thought odůvodnění: NIKDY neposíláme klientovi (prozradilo by tajenku)
+        const reasoning = parsed.reasoning || parsed.reason || ''
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[AI Rozhodčí CoT] Otázka: "${rawQ}" -> Zdůvodnění: "${reasoning}" -> Verdikt: ${parsed.verdict}`)
+        }
+
         const v = String(parsed.verdict || '').toUpperCase()
 
         if (v === 'ANO' || v === 'NE') {

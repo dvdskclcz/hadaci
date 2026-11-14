@@ -50,6 +50,7 @@ interface TestHistoryItem {
     questionResult?: {
         status: 'VALID' | 'INVALID' | 'ERROR'
         verdict?: 'ANO' | 'NE' | 'NELZE_OVERIT'
+        reasoning?: string
         reason?: string
         message?: string
         matchedFacts: Array<{
@@ -1057,7 +1058,20 @@ export default function DetectiveAdminPanel() {
                                                         </button>
 
                                                         {item.isExpandedRentgen && (
-                                                            <div className="mt-2.5 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                                                            <div className="mt-2.5 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                                                                {/* Myšlenkový pochod rozhodčího (Chain-of-Thought) */}
+                                                                {(item.questionResult.reasoning || item.questionResult.reason) && (
+                                                                    <div className="p-3 rounded-xl bg-cyan-950/30 border border-cyan-800/50 space-y-1.5">
+                                                                        <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300">
+                                                                            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                                                                            <span>Myšlenkový pochod rozhodčího:</span>
+                                                                        </div>
+                                                                        <p className="text-xs text-slate-300 font-mono leading-relaxed bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80 whitespace-pre-wrap">
+                                                                            {item.questionResult.reasoning || item.questionResult.reason}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
                                                                 <p className="text-[10px] text-slate-400 mb-2">
                                                                     Tyto fakty byly AI rozhodčímu předány v promptu jako uzavřený kontext spisu:
                                                                 </p>

@@ -383,6 +383,7 @@ export async function testDetectiveQuestionAction(params: {
 }): Promise<{
     status: 'VALID' | 'INVALID' | 'ERROR'
     verdict?: 'ANO' | 'NE' | 'NELZE_OVERIT'
+    reasoning?: string
     reason?: string
     message?: string
     matchedFacts: Array<{
@@ -555,11 +556,14 @@ export async function testDetectiveQuestionAction(params: {
             verdict = v
         }
 
+        const reasoning = parsed.reasoning || parsed.reason || ''
+
         return {
             status: 'VALID',
             verdict,
-            reason: parsed.reason,
-            message: parsed.reason,
+            reasoning,
+            reason: reasoning,
+            message: reasoning,
             matchedFacts: debugFactsList,
         }
     } catch (err: any) {
