@@ -70,7 +70,7 @@ export default function UserNav() {
       user.user_metadata?.full_name || user.email?.split('@')[0] || 'Hráč'
 
     return (
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1 xl:gap-2 shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 rounded-full py-0.5 sm:py-1 px-2 sm:px-2.5 min-w-0">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -84,7 +84,7 @@ export default function UserNav() {
               <UserIcon className="w-3.5 h-3.5" />
             </div>
           )}
-          <span className="text-xs font-semibold text-slate-200 max-w-[76px] sm:max-w-[110px] truncate">
+          <span className="text-xs font-semibold text-slate-200 max-w-[76px] sm:max-w-[110px] lg:max-w-[105px] xl:max-w-[150px] truncate">
             {displayName}
           </span>
         </div>

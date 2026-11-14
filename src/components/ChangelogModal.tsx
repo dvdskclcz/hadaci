@@ -125,7 +125,7 @@ export default function ChangelogModal() {
             <button
                 type="button"
                 onClick={handleOpen}
-                className="group relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-mono text-slate-400 hover:text-slate-200 transition shrink-0"
+                className="group relative inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-mono text-slate-400 hover:text-slate-200 transition shrink-0"
             >
                 {hasUnread && (
                     <span className="relative flex h-2 w-2">
@@ -134,7 +134,7 @@ export default function ChangelogModal() {
                     </span>
                 )}
                 <span>{APP_VERSION}</span>
-                <Sparkles className="w-3 h-3 text-amber-400 opacity-70 group-hover:opacity-100 transition" />
+                <Sparkles className="w-3 h-3 text-amber-400 opacity-70 group-hover:opacity-100 transition hidden sm:inline shrink-0" />
             </button>
 
             {/* Vykreslení modálního okna novinek přes React Portal */}

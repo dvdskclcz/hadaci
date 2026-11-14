@@ -159,7 +159,7 @@ export default function TopicSuggestionModal({ variant = 'nav' }: Props) {
                 <button
                     type="button"
                     onClick={() => setIsOpen(true)}
-                    className="text-xs font-semibold p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                    className="text-xs font-semibold p-1.5 sm:px-2.5 sm:py-1.5 lg:px-2 xl:px-3 lg:text-xs xl:text-sm rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition flex items-center gap-1.5 whitespace-nowrap shrink-0"
                     title="Navrhni, co by se mělo hádat příště"
                 >
                     <Lightbulb className="w-3.5 h-3.5 text-amber-400" />

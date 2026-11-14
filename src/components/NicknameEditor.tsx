@@ -68,11 +68,11 @@ export default function NicknameEditor({ initialNickname }: { initialNickname?: 
         <button
             type="button"
             onClick={handleStartEdit}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition group text-xs"
+            className="inline-flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition group text-xs shrink-0"
             title="Klikni pro změnu přezdívky"
         >
             <User className="w-3.5 h-3.5 text-amber-400" />
-            <span className="font-medium max-w-[120px] truncate">{nickname}</span>
+            <span className="font-medium max-w-[85px] xl:max-w-[120px] truncate">{nickname}</span>
             <Edit2 className="w-3 h-3 text-slate-500 group-hover:text-amber-400 transition ml-0.5" />
         </button>
     )
