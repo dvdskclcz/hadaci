@@ -19,13 +19,13 @@ Tento soubor slouží jako centrální zásobník témat pro tvorbu nových dete
 | 001 | **Karel Čapek** | `person` | Střední | ✅ Hotovo | `001-karel-capek` |
 | 002 | **Hrad Wawel** | `place` | Střední | ✅ Hotovo | `002-hrad-wawel` |
 | 003 | **Černá skříňka v letadle** | `object` | Lehká | ✅ Hotovo | `003-cerna-skrinka` |
-| 004 | **Pražské jaro 1968** | `event` | Střední | 💡 Nápad | `004-prazske-jaro-1968` |
-| 005 | **Kostkový cukr** | `object` | Lehká | 💡 Nápad | `005-kostkovy-cukr` |
-| 006 | **Ještěd (vysílač a hotel)** | `place` | Lehká | 💡 Nápad | `006-jested` |
-| 007 | **Remoska** | `object` | Střední | 💡 Nápad | `007-remoska` |
-| 008 | **Emil Zátopek** | `person` | Lehká | 💡 Nápad | `008-emil-zatopek` |
-| 009 | **Defenestrace** | `concept` / `event` | Střední | 💡 Nápad | `009-defenestrace` |
-| 010 | **Orloj v Praze** | `object` / `place` | Lehká | 💡 Nápad | `010-orloj-praha` |
+| 004 | **Polární záře** | `concept` | Střední | ✅ Hotovo | `004-polarni-zare` |
+| 005 | **Titanic** | `object` | Lehká | ✅ Hotovo | `005-titanic` |
+| 006 | **Pražské jaro 1968** | `event` | Střední | 💡 Nápad | `006-prazske-jaro-1968` |
+| 007 | **Kostkový cukr** | `object` | Lehká | 💡 Nápad | `007-kostkovy-cukr` |
+| 008 | **Ještěd (vysílač a hotel)** | `place` | Lehká | 💡 Nápad | `008-jested` |
+| 009 | **Remoska** | `object` | Střední | 💡 Nápad | `009-remoska` |
+| 010 | **Emil Zátopek** | `person` | Lehká | 💡 Nápad | `010-emil-zatopek` |
 
 ---
 
