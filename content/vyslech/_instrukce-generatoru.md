@@ -88,6 +88,7 @@ Musí pokrýt:
 Dvacet klíčových encyklopedických faktů. Musí obsahovat:
 - Nejznámější zásluhy, díla, funkce, vlastnosti.
 - Propojení historických reálií se současnou geografií (např. území dnešních států).
+- **Geografické ukotvení a sousedství s ČR**: U geografických míst, památek a staveb (zejména zahraničních) musí spis vždy výslovně uvádět kontinent (např. Evropa) a případné sousedství daného státu s Českou republikou (např. u Wawelu: „Hrad se nachází v Polsku, které je sousedním státem České republiky“), aby AI rozhodčí i hráč měli jistou oporu pro otázky typu „Leží to v sousedním státě ČR?“ nebo „Je to v Evropě?“.
 - **Negativní vymezení (čím pojem NENÍ)**: Zásadní pro eliminaci omylů LLM soudce.
   - *Příklad pro Čapka:* „Karel Čapek nezemřel v koncentračním táboře ani nebyl popraven nacisty (zemřel na zápal plic v prosinci 1938).“
   - *Příklad pro Čapka:* „Slovo robot sám nevymyslel, autorem slova byl jeho bratr Josef Čapek, Karel ho však použil a proslavil ve hře R.U.R.“

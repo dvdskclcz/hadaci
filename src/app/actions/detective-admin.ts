@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { verifyAdminSession } from '@/app/actions/admin'
 import { validateAnswer } from '@/lib/game/validator'
+import { getDetectiveRefereeSystemPrompt } from '@/lib/detective-prompt'
 
 // Inicializace privátního Supabase klienta s plnými právy pro administraci
 function getAdminSupabaseClient() {
@@ -530,27 +531,7 @@ export async function testDetectiveQuestionAction(params: {
                 messages: [
                     {
                         role: 'system',
-                        content: `Jsi nestranný a přesný AI rozhodčí v detektivní hádací hře Hádači.cz.
-Tvým jediným úkolem je posoudit hráčovu otázku a vrátit jeden ze 3 verdiktů: "ANO", "NE" nebo "NELZE_OVERIT".
-
-STRIKTNÍ PRAVIDLA:
-1. UZAVŘENÝ KONTEXT: Vycházej VÝHRADNĚ a POUZE ze spisu faktů níže. Je přísně zakázáno používat externí vědomosti, které nejsou ve spisu přímo uvedeny.
-2. LOGICKÝ SOUČIN: Pokud otázka spojuje více podmínek spojkou "a" / "i" (např. "Je to Čech a nositel Nobelovy ceny?") a alespoň jedna z nich neplatí, odpověz "NE".
-3. ROZPOR / POPŘENÍ: Pokud otázka tvrdí cokoliv, co je ve spisu popřeno či vyloučeno, odpověz "NE".
-4. POTVRZENÍ: Pokud je tvrzení ve spisu přímo potvrzeno, odpověz "ANO".
-5. NEDOSTATEK DAT: Pokud spis o dané věci neobsahuje vůbec žádné informace, odpověz "NELZE_OVERIT".
-6. GEOGRAFIE A HISTORIE (ÚZEMÍ DNEŠNÍCH STÁTŮ):
-   - Geografické a územní otázky (např. „Narodil se v Česku?“, „Pochází z Česka?“, „Je to v ČR?“, „Stalo se to v Německu?“) vyhodnocuj podle území SOUČASNÉHO státu, i když k události došlo v minulosti (např. za Rakouska-Uherska nebo Československa). Pokud se pojem vztahuje k místu ležícímu na území dnešního státu, odpověz "ANO".
-   - Přísně historicky vyhodnocuj pouze otázky, které se výslovně ptají na konkrétní historický státní útvar nebo režim (např. „Narodil se za Rakouska-Uherska?“, „Žil za první republiky?“, „Stalo se to v Československu?“).
-
-VYŠETŘOVACÍ SPIS (FAKTA O TAJNÉM POJMU):
-${contextTexts}
-
-Vrať JSON ve formátu:
-{
-  "verdict": "ANO" | "NE" | "NELZE_OVERIT",
-  "reason": "stručné zdůvodnění"
-}`,
+                        content: getDetectiveRefereeSystemPrompt(contextTexts),
                     },
                     {
                         role: 'user',

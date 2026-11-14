@@ -18,8 +18,13 @@ Tento dokument slouží jako kontrolní simulace dotazování hráče v herním 
 
 ### 3. „Nachází se toto místo v České republice?“
 - **Očekávaná odpověď:** `NE`
-- **Opora ve spisu:** `core_facts[3]` – *„Tento hrad leží na území dnešního Polska (nikoliv v České republice, na Slovensku, v Německu ani v Rakousku).“*
+- **Opora ve spisu:** `core_facts[3]` – *„Tento hrad leží na území dnešního Polska, které sousedí s Českou republikou (samotný hrad se nenachází v ČR, na Slovensku, v Německu ani v Rakousku).“*
 - **Verdikt:** ✅ SPLNĚNO (NE)
+
+### 3b. „Nachází se v sousedním státě České republiky?“
+- **Očekávaná odpověď:** `ANO`
+- **Opora ve spisu:** `core_facts[3]` – *„Tento hrad leží na území dnešního Polska, které sousedí s Českou republikou...“* a pravidlo pro obecnou zeměpisnou dedukci AI rozhodčího (Polsko sousedí s ČR).
+- **Verdikt:** ✅ SPLNĚNO (ANO)
 
 ### 4. „Leží toto místo v Polsku?“
 - **Očekávaná odpověď:** `ANO`

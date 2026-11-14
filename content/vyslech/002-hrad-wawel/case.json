@@ -17,7 +17,7 @@
     "Hledaná entita je skutečné existující geografické místo a stavební komplex na planetě Zemi (nikoliv fiktivní ani mytologické místo).",
     "Jedná se o historické opevněné sídlo, hrad a architektonický komplex vytvořený lidskou rukou.",
     "Lokalita se nachází na evropském kontinentu, konkrétně ve střední Evropě.",
-    "Tento hrad leží na území dnešního Polska (nikoliv v České republice, na Slovensku, v Německu ani v Rakousku).",
+    "Tento hrad leží na území dnešního Polska, které sousedí s Českou republikou (samotný hrad se nenachází v ČR, na Slovensku, v Německu ani v Rakousku).",
     "Nenachází se v hlavním městě Varšavě; leží v historickém královském městě Krakov (Kraków).",
     "Tyčí se na vápencovém pahorku na levém břehu nejdelší polské řeky Visly (Wisła).",
     "Po celá staletí sloužil jako oficiální sídlo a korunovační místo polských králů a panovníků.",
@@ -66,7 +66,7 @@
     { "q": "Visí zde slavný Zikmundův zvon?", "a": "ANO" },
     { "q": "Působil zde za války nacistický pohlavár Hans Frank?", "a": "ANO" },
     { "q": "Nachází se v tomto areálu katedrála svatého Stanislava a Václava?", "a": "ANO" },
-    { "q": "Je toto místo postaveno výhradně ze dřeva?", "a": "NE" },
+    { "q": "Nachází se toto místo v sousedním státě České republiky?", "a": "ANO" },
     { "q": "Je stálým domovem da Vinciho obrazu Dáma s hranostajem?", "a": "NE" }
   ]
 }
