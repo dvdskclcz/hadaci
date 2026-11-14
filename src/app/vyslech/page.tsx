@@ -10,7 +10,7 @@ export const metadata = {
 }
 
 interface DetectivePageProps {
-    searchParams: Promise<{ slug?: string }>
+    searchParams: Promise<{ slug?: string; case?: string }>
 }
 
 async function DetectiveCaseLoader({ searchParams }: DetectivePageProps) {
@@ -18,7 +18,7 @@ async function DetectiveCaseLoader({ searchParams }: DetectivePageProps) {
     let slug: string | undefined = undefined
     try {
         const params = searchParams ? await searchParams : undefined
-        slug = params?.slug
+        slug = params?.case || params?.slug
     } catch (err) {
         console.warn('⚠️ Chyba při načítání searchParams v /vyslech:', err)
     }

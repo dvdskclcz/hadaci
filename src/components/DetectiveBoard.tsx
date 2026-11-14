@@ -10,6 +10,7 @@ import {
     submitDetectiveGuessAction,
 } from '@/app/actions/detective'
 import NicknameEditor from '@/components/NicknameEditor'
+import { formatCaseTitle } from '@/lib/utils'
 import {
     Search,
     HelpCircle,
@@ -315,7 +316,8 @@ export default function DetectiveBoard({
 
     // Share results handler
     const handleShare = async () => {
-        const text = `🕵️‍♂️ Hádači.cz – Detektivní výslech\nPřípad: ${initialCase.slug}\n✅ Úspěšně vyřešeno na ${questionsLog.length} otázek se ziskem ${score} bodů!\nVyzkoušej své deduktivní schopnosti na: https://hadaci.cz/vyslech?slug=${initialCase.slug}`
+        const title = formatCaseTitle(initialCase.slug)
+        const text = `🕵️‍♂️ Hádači.cz – Detektivní výslech\n${title}\n✅ Úspěšně vyřešeno na ${questionsLog.length} otázek se ziskem ${score} bodů!\nVyzkoušej své deduktivní schopnosti na: https://hadaci.cz/vyslech?case=${initialCase.slug}`
 
         if (navigator?.clipboard) {
             await navigator.clipboard.writeText(text)
@@ -327,26 +329,34 @@ export default function DetectiveBoard({
     return (
         <div className="w-full max-w-xl mx-auto space-y-4">
             {/* Přepínač archivních spisů / případů */}
-            {allCases.length > 1 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs">
+                <div className="flex items-center gap-1.5 overflow-x-auto">
                     <span className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] pl-1">
                         Spisy:
                     </span>
                     {allCases.map((c) => (
                         <Link
                             key={c.id}
-                            href={`/vyslech?slug=${c.slug}`}
+                            href={`/vyslech?case=${c.slug}`}
                             className={`px-3 py-1 rounded-full whitespace-nowrap transition border ${
                                 c.id === initialCase.id
-                                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 font-bold'
+                                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold'
                                     : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
                             }`}
                         >
-                            {c.slug}
+                            {formatCaseTitle(c.slug)}
                         </Link>
                     ))}
                 </div>
-            )}
+
+                <Link
+                    href="/archiv"
+                    className="text-[11px] text-slate-400 hover:text-cyan-400 font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 transition pl-2"
+                >
+                    <Archive className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Všechny spisy</span>
+                </Link>
+            </div>
 
             {/* Hlavní karta vyšetřování */}
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">

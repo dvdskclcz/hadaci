@@ -133,6 +133,21 @@ export async function getActiveDetectiveCaseAction(slug?: string): Promise<{
             console.warn(`⚠️ Chyba při načítání případu podle slug "${slug}":`, slugError)
         }
         targetCase = slugData
+
+        // Fallback: Pokud slug neodpovídá sloupci slug, zkusíme sloupec id
+        if (!targetCase) {
+            const { data: idData } = await adminSupabase
+                .from('detective_cases')
+                .select(SAFE_COLUMNS)
+                .eq('id', slug)
+                .lte('publish_date', todayStr)
+                .eq('is_active', true)
+                .maybeSingle()
+
+            if (idData) {
+                targetCase = idData
+            }
+        }
     }
 
     // Pokud nemáme targetCase ze slugu, vezmeme nejnovější z publikovaných
@@ -277,6 +292,138 @@ export async function getActiveDetectiveCaseAction(slug?: string): Promise<{
         })),
         userState,
     }
+}
+
+export interface DetectiveArchiveCase {
+    id: string
+    slug: string
+    publish_date: string
+    entity_type: 'person' | 'place' | 'object' | 'event' | 'concept'
+    difficulty: 'easy' | 'medium' | 'hard'
+    initial_clue: string
+    secret_answer?: string | null
+}
+
+export interface DetectiveUserArchiveState {
+    status: 'IN_PROGRESS' | 'SOLVED' | 'DRAWER'
+    score_earned: number
+    questions_count: number
+    is_drawer_repair: boolean
+    secret_answer?: string | null
+    updated_at?: string
+}
+
+// 1b. Načtení všech publikovaných případů pro Archiv a Šuplík
+export async function getPublishedDetectiveCasesAction(): Promise<{
+    cases: DetectiveArchiveCase[]
+    userStates: Record<string, DetectiveUserArchiveState>
+}> {
+    const adminSupabase = getAdminSupabaseClient()
+    const supabase = await createServerSupabaseClient()
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+    const SAFE_COLUMNS = 'id, slug, publish_date, entity_type, difficulty, initial_clue, is_active'
+
+    const { data: casesData, error: casesError } = await adminSupabase
+        .from('detective_cases')
+        .select(SAFE_COLUMNS)
+        .lte('publish_date', todayStr)
+        .eq('is_active', true)
+        .order('publish_date', { ascending: false })
+
+    if (casesError) {
+        console.warn('⚠️ Chyba při načítání případů pro archiv:', casesError)
+    }
+
+    let cases: DetectiveArchiveCase[] = (casesData as DetectiveArchiveCase[]) || []
+
+    // Fallback pokud je databáze prázdná, zkusíme načíst lokální soubor
+    if (cases.length === 0) {
+        try {
+            const fs = await import('node:fs')
+            const path = await import('node:path')
+            const jsonPath = path.join(process.cwd(), 'content', 'vyslech', '001-karel-capek', 'case.json')
+            if (fs.existsSync(jsonPath)) {
+                const raw = fs.readFileSync(jsonPath, 'utf8')
+                const parsed = JSON.parse(raw)
+                if (parsed.publish_date <= todayStr) {
+                    cases.push({
+                        id: '00000000-0000-0000-0000-000000000001',
+                        slug: parsed.slug || '001-karel-capek',
+                        publish_date: parsed.publish_date || todayStr,
+                        entity_type: parsed.entity_type || 'person',
+                        difficulty: parsed.difficulty || 'medium',
+                        initial_clue: parsed.initial_clue || '',
+                        secret_answer: null,
+                    })
+                }
+            }
+        } catch (localErr) {
+            console.warn('⚠️ Nelze načíst lokální záložní case pro archiv:', localErr)
+        }
+    }
+
+    const userStates: Record<string, DetectiveUserArchiveState> = {}
+
+    try {
+        const {
+            data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+            const { data: states, error: statesError } = await adminSupabase
+                .from('user_detective_state')
+                .select('case_id, status, score_earned, questions_log, wrong_guesses_count, is_drawer_repair, updated_at')
+                .eq('user_id', user.id)
+
+            if (statesError) {
+                console.warn('⚠️ Chyba při čtení user_detective_state pro archiv:', statesError)
+            } else if (states) {
+                // Načteme secret_answer VÝHRADNĚ pro úspěšně vyřešené případy
+                const solvedCaseIds = states.filter((s) => s.status === 'SOLVED').map((s) => s.case_id)
+                const solvedSecretMap = new Map<string, string>()
+
+                if (solvedCaseIds.length > 0) {
+                    const { data: secretRows, error: secErr } = await adminSupabase
+                        .from('detective_cases')
+                        .select('id, secret_answer')
+                        .in('id', solvedCaseIds)
+
+                    if (secErr) {
+                        console.warn('⚠️ Chyba při načítání tajenek pro vyřešené případy v archivu:', secErr)
+                    } else if (secretRows) {
+                        for (const row of secretRows) {
+                            solvedSecretMap.set(row.id, row.secret_answer)
+                        }
+                    }
+                }
+
+                for (const s of states) {
+                    const qLog = Array.isArray(s.questions_log) ? s.questions_log : []
+                    const isSolved = s.status === 'SOLVED'
+                    const caseSecretAnswer = isSolved ? (solvedSecretMap.get(s.case_id) || null) : null
+
+                    userStates[s.case_id] = {
+                        status: s.status,
+                        score_earned: s.score_earned || 0,
+                        questions_count: qLog.length,
+                        is_drawer_repair: Boolean(s.is_drawer_repair),
+                        secret_answer: caseSecretAnswer,
+                        updated_at: s.updated_at,
+                    }
+                }
+            }
+        }
+    } catch (authErr) {
+        console.warn('⚠️ Chyba autentizace při načítání stavů archivu výslechu:', authErr)
+    }
+
+    // Bezpečná úprava: secret_answer je přítomen pouze u SOLVED případů
+    const safeCases = cases.map((c) => ({
+        ...c,
+        secret_answer: userStates[c.id]?.status === 'SOLVED' ? userStates[c.id]?.secret_answer || null : null,
+    }))
+
+    return { cases: safeCases, userStates }
 }
 
 export interface AskDetectiveQuestionParams {
