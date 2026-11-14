@@ -484,7 +484,13 @@ export default function RiddleCard({
                         </div>
                     )}
 
-                    <div className="pt-2 border-t border-slate-800/60 mt-4">
+                    <div className="pt-2 border-t border-slate-800/60 mt-4 space-y-2">
+                        <Link
+                            href="/vyslech"
+                            className="w-full py-2.5 px-4 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-bold flex items-center justify-center gap-2 transition"
+                        >
+                            <span>🕵️‍♂️ Vyzkoušet nový Detektivní výslech</span>
+                        </Link>
                         <Link
                             href="/archiv"
                             className="w-full py-2.5 px-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2 transition"

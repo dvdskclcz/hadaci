@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { connection } from 'next/server'
+import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { Bot, Brain, MessageSquare } from 'lucide-react'
+import { Bot, Brain, MessageSquare, ArrowRight } from 'lucide-react'
 import LeaderboardPlayerTable from '@/components/LeaderboardPlayerTable'
 
 async function LeaderboardTables() {
@@ -102,25 +103,36 @@ async function LeaderboardTables() {
             {/* 2. Karta: Nejlepší hádači se sloupci sérií a přepínačem Skóre vs. Série */}
             <LeaderboardPlayerTable players={enrichedPlayers} />
 
-            {/* 3. Upoutávka na Režim 2 (Návnada pro testery) */}
-            <div className="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/20 rounded-3xl p-6 text-left relative overflow-hidden">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                        <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold text-white">Chystáme: Detektivní výslech</span>
-                            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">
-                                Již brzy
-                            </span>
+            {/* 3. Upoutávka na Režim 2: Detektivní výslech */}
+            <Link
+                href="/vyslech"
+                className="group block bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-cyan-500/20 hover:border-cyan-500/50 rounded-3xl p-6 text-left relative overflow-hidden transition shadow-lg"
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 group-hover:scale-105 transition">
+                            <MessageSquare className="w-5 h-5" />
                         </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">
-                            Žádné pasivní čtení nápověd! Budeš klást libovolné zjišťovací otázky a systém ti bude odpovídat pouze <strong>ANO</strong>, <strong>NE</strong> nebo <strong>Nelze ověřit</strong>. Využijeme lokální sémantické hledání a uzavřený kontext.
-                        </p>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                                    Detektivní výslech
+                                </span>
+                                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full font-bold">
+                                    Novinka v1.6.0
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                                Žádné pasivní čtení nápověd! Pokládej zjišťovací otázky a systém ti bude odpovídat pouze <strong>ANO</strong>, <strong>NE</strong> nebo <strong>Nelze ověřit</strong>. Využij dedukci a odhal případ!
+                            </p>
+                        </div>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-1 text-xs font-semibold text-cyan-400 group-hover:text-cyan-300 shrink-0 self-center">
+                        <span>Hrát</span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                     </div>
                 </div>
-            </div>
+            </Link>
         </div>
     )
 }

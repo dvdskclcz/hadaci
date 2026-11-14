@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { APP_VERSION, CHANGELOG } from '@/lib/changelog'
-import { Sparkles, X, CheckCircle2, History } from 'lucide-react'
+import { Sparkles, X, CheckCircle2, History, ArrowRight } from 'lucide-react'
 
 export default function ChangelogModal() {
     const [isOpen, setIsOpen] = useState(false)
@@ -79,12 +80,33 @@ export default function ChangelogModal() {
                                     </li>
                                 ))}
                             </ul>
+
+                            {release.cta && (
+                                <div className="mt-3">
+                                    <Link
+                                        href={release.cta.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition group"
+                                    >
+                                        <span>{release.cta.text}</span>
+                                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
 
                 {/* Spodní tlačítko */}
-                <div className="pt-3.5 border-t border-slate-800 mt-4 shrink-0 flex justify-end">
+                <div className="pt-3.5 border-t border-slate-800 mt-4 shrink-0 flex items-center justify-between gap-2">
+                    <Link
+                        href="/vyslech"
+                        onClick={() => setIsOpen(false)}
+                        className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                        <span>🕵️‍♂️ Zkusit Detektivní výslech</span>
+                    </Link>
+
                     <button
                         type="button"
                         onClick={() => setIsOpen(false)}

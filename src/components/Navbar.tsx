@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Sparkles, Archive, Trophy } from 'lucide-react'
+import { Sparkles, Archive, Trophy, Search } from 'lucide-react'
 import ChangelogModal from '@/components/ChangelogModal'
 import RulesModal from '@/components/RulesModal'
 import TopicSuggestionModal from '@/components/TopicSuggestionModal'
@@ -31,6 +31,18 @@ export default function Navbar() {
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden md:inline">Hra</span>
+            </Link>
+
+            <Link
+              href="/vyslech"
+              title="Detektivní výslech"
+              className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition"
+            >
+              <Search className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden md:inline">Výslech</span>
+              <span className="hidden xl:inline text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
+                Nové
+              </span>
             </Link>
 
             <Link

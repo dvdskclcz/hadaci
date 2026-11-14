@@ -13,6 +13,7 @@ import {
     deleteReportAction,
 } from '@/app/actions/admin'
 import { formatCzechDate } from '@/lib/utils'
+import DetectiveAdminPanel from '@/components/admin/DetectiveAdminPanel'
 import {
     Lock,
     PlusCircle,
@@ -95,8 +96,8 @@ export default function AdminPanel({
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
 
-    // Přepínání 3 záložek
-    const [activeTab, setActiveTab] = useState<'riddles' | 'suggestions' | 'reports'>('riddles')
+    // Přepínání 4 záložek
+    const [activeTab, setActiveTab] = useState<'riddles' | 'suggestions' | 'reports' | 'detective'>('riddles')
 
     // Stavy pro hlášení a reklamace
     const [reportsList, setReportsList] = useState<ReportItem[]>(existingReports)
@@ -358,7 +359,7 @@ export default function AdminPanel({
 
     // 2. Hlavní panel
     return (
-        <div className="w-full max-w-3xl mx-auto space-y-6 text-left">
+        <div className="w-full max-w-4xl mx-auto space-y-6 text-left">
             {/* Horní pruh s přepínačem záložek */}
             <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto w-full sm:w-auto">
@@ -406,6 +407,18 @@ export default function AdminPanel({
                                 {pendingReportsCount}
                             </span>
                         )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('detective')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${activeTab === 'detective'
+                                ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                    >
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Detektivní výslech</span>
                     </button>
                 </div>
 
@@ -1042,6 +1055,15 @@ export default function AdminPanel({
                             })}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* ========================================================= */}
+            {/* ZÁLOŽKA 4: DETEKTIVNÍ VÝSLECH                             */}
+            {/* ========================================================= */}
+            {activeTab === 'detective' && (
+                <div className="space-y-6 animate-fade-in">
+                    <DetectiveAdminPanel />
                 </div>
             )}
         </div>

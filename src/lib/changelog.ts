@@ -1,13 +1,32 @@
-export const APP_VERSION = 'v1.5.0'
+export const APP_VERSION = 'v1.6.0'
 
 export type ReleaseNote = {
   version: string
   date: string
   title: string
   highlights: string[]
+  cta?: {
+    text: string
+    href: string
+  }
 }
 
 export const CHANGELOG: ReleaseNote[] = [
+  {
+    version: 'v1.6.0',
+    date: '14. listopadu 2026',
+    title: 'Nový herní mód: Detektivní výslech',
+    highlights: [
+      'Nový týdenní mód Detektivní výslech (/vyslech): Máš před sebou pouze jednu úvodní stopu a uzavřený vyšetřovací spis. Ptej se na cokoliv formou zjišťovacích otázek (ANO/NE) – AI vyšetřovatel ověří každý dotaz proti spisovým faktům bez spoilerů.',
+      'Taktické bodování a limit 20 otázek: Začínáš se 100 body. Odpověď ANO nebo NE stojí 4 body, NELZE OVĚŘIT jen 2 body a chybný finální tip 15 bodů (máš max. 3 pokusy na tip). Vyřešení na první ostrý pokus se započítává i do Mistrovské série.',
+      'Odložení do Šuplíku: Pokud vyčerpáš 20 otázek nebo 3 tipy, tajenka zůstává skrytá a spis putuje do Šuplíku, odkud si můžeš kdykoliv spustit odvetu.',
+      'Archiv týdenních spisů: Možnost zpětně dohrát i starší publikované případy.',
+    ],
+    cta: {
+      text: 'Vyzkoušet Detektivní výslech',
+      href: '/vyslech',
+    },
+  },
   {
     version: 'v1.5.0',
     date: '7. listopadu 2026',

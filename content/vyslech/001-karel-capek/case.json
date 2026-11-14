@@ -1,0 +1,130 @@
+{
+  "slug": "001-karel-capek",
+  "publish_date": "2026-11-12",
+  "entity_type": "person",
+  "difficulty": "medium",
+  "secret_answer": "Karel Čapek",
+  "accepted_synonyms": [
+    "Čapek",
+    "Karel Capek",
+    "spisovatel Karel Čapek",
+    "bratr Josefa Čapka"
+  ],
+  "initial_clue": "Svými slovy varoval před stroji i mloky a obohatil světové slovníky.",
+  "core_facts": [
+    "Hledaná entita je skutečná historická lidská bytost (reálný člověk, nikoliv fiktivní postava).",
+    "Jedná se o osobu mužského pohlaví.",
+    "Tato osoba v současnosti již nežije (zemřela ve 20. století).",
+    "Osoba žila a působila na přelomu 19. a 20. století a především v období první československé republiky.",
+    "Byl české národnosti a státním občanem Rakouska-Uherska a následně Československa.",
+    "Jeho primární životní profesí byla literatura, dramata, žurnalistika a publicistika (spisovatel a novinář).",
+    "Jeho život a působení jsou úzce spjaty s Prahou a středními Čechami (např. Strž u Dobříše).",
+    "Nikdy nebyl vrcholným voleným politikem, poslancem, ministrem ani prezidentem státu.",
+    "Nebyl vědcem, lékařem ani technickým vynálezcem, ačkoliv o vědě a technice rozsáhle psal.",
+    "Narodil se v Podkrkonoší v obci Malé Svatoňovice v severovýchodních Čechách, na území dnešního Česka (tehdy součást Rakouska-Uherska), v rodině venkovského lékaře."
+  ],
+  "key_facts": [
+    "Je autorem světoznámé divadelní hry R.U.R. (Rossumovi Univerzální Roboti) publikované v roce 1920.",
+    "Slovo „robot“ sám nevymyslel; autorem slova byl jeho starší bratr Josef Čapek, Karel ho však poprvé použil a celosvětově proslavil.",
+    "Je autorem slavného varovného sci-fi a utopického románu Válka s mloky (1936).",
+    "Napsal dramatická varování před fašismem, diktaturou a fanatismem Bílá nemoc (1937) a Matka (1938).",
+    "Je autorem protiválečného románu Krakatit (1922) varujícího před ničivou silou výbušnin a zneužitím vědy.",
+    "Byl dlouholetým kmenovým redaktorem, autorem sloupků a fejetonů v Lidových novinách.",
+    "Byl vůdčí osobností neformální skupiny intelektuálů zvané „Pátečníci“, která se scházela v jeho vile na Vinohradech.",
+    "Byl blízkým osobním přítelem prezidenta T. G. Masaryka a sepsal slavnou knihu Hovory s T. G. Masarykem.",
+    "Napsal celosvětově oblíbenou knihu pro děti Dášeňka čili život štěněte (1933) a Devatero pohádek.",
+    "Karel Čapek nezemřel v koncentračním táboře ani nebyl popraven nacisty; zemřel na zápal plic 25. prosince 1938 v Praze.",
+    "V koncentračním táboře Bergen-Belsen naopak v dubnu 1945 zahynul jeho bratr, malíř Josef Čapek.",
+    "Karel Čapek nikdy nezískal Nobelovu cenu za literaturu, přestože byl na ni celkem sedmkrát nominován.",
+    "Jeho celoživotní partnerkou a od roku 1935 manželkou byla herečka a spisovatelka Olga Scheinpflugová.",
+    "Trpěl těžkým onemocněním páteře (Bechtěrevova nemoc), kvůli kterému nebyl odveden do armády v 1. světové válce.",
+    "Napsal noetickou filozofickou trilogii Hordubal, Povětroň a Obyčejný život zkoumající možnosti lidského poznání.",
+    "Napsal slavné cestopisné črty z evropských zemí, např. Anglické listy, Výlet do Španěl nebo Cesta na sever.",
+    "Byl nadšeným amatérským zahradníkem a své postřehy shrnul v populární knize Zahradníkův rok (1929).",
+    "Napsal úspěšné cykly detektivních a kriminálních příběhů Povídky z jedné kapsy a Povídky z druhé kapsy.",
+    "Nebyl komunistou ani stoupencem marxismu; v roce 1924 otiskl v časopise Přítomnost slavnou stať „Proč nejsem komunistou“.",
+    "Po Mnichovské dohodě na podzim 1938 se stal terčem nenávistné štvavé kampaně českých fašistů a pravicových radikálů."
+  ],
+  "anticipated_qa": [
+    {
+      "q": "Je to skutečný člověk?",
+      "a": "ANO"
+    },
+    {
+      "q": "Žije tato osoba v současnosti?",
+      "a": "NE"
+    },
+    {
+      "q": "Je to žena?",
+      "a": "NE"
+    },
+    {
+      "q": "Pochází z Česka nebo narodil se na území dnešního Česka?",
+      "a": "ANO"
+    },
+    {
+      "q": "Žil ve 20. století?",
+      "a": "ANO"
+    },
+    {
+      "q": "Byl to spisovatel, novinář nebo dramatik?",
+      "a": "ANO"
+    },
+    {
+      "q": "Byl to vrcholný politik, ministr nebo prezident?",
+      "a": "NE"
+    },
+    {
+      "q": "Napsal divadelní hru R.U.R.?",
+      "a": "ANO"
+    },
+    {
+      "q": "Vymyslel on sám osobně slovo robot?",
+      "a": "NE"
+    },
+    {
+      "q": "Zemřel v koncentračním táboře nebo byl popraven?",
+      "a": "NE"
+    },
+    {
+      "q": "Získal někdy Nobelovu cenu za literaturu?",
+      "a": "NE"
+    },
+    {
+      "q": "Byl jeho bratrem slavný malíř a ilustrátor?",
+      "a": "ANO"
+    },
+    {
+      "q": "Přátelil se s prezidentem Tomášem Garriguem Masarykem?",
+      "a": "ANO"
+    },
+    {
+      "q": "Psal do Lidových novin?",
+      "a": "ANO"
+    },
+    {
+      "q": "Napsal knihu Válka s mloky?",
+      "a": "ANO"
+    },
+    {
+      "q": "Byla jeho manželkou herečka Olga Scheinpflugová?",
+      "a": "ANO"
+    },
+    {
+      "q": "Byl to člen komunistické strany?",
+      "a": "NE"
+    },
+    {
+      "q": "Napsal knížku pro děti Dášeňka čili život štěněte?",
+      "a": "ANO"
+    },
+    {
+      "q": "Zemřel ještě před začátkem druhé světové války?",
+      "a": "ANO"
+    },
+    {
+      "q": "Byl to hudební skladatel nebo malíř?",
+      "a": "NE"
+    }
+  ]
+}

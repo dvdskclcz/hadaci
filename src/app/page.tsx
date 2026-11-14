@@ -1,7 +1,9 @@
 import { Suspense } from 'react'
 import { connection } from 'next/server'
+import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import RiddleCard from '@/components/RiddleCard'
+import { HelpCircle, ArrowRight } from 'lucide-react'
 
 async function DailyGame() {
   // Explicitně Next.js sdělíme, že tato komponenta běží dynamicky při požadavku
@@ -140,6 +142,39 @@ export default function Home() {
       <Suspense fallback={<p className="text-slate-400 text-sm animate-pulse">Příprava hracího stolu...</p>}>
         <DailyGame />
       </Suspense>
+
+      {/* Upoutávka na nový herní mód: Detektivní výslech */}
+      <div className="w-full max-w-xl mx-auto mt-6">
+        <Link
+          href="/vyslech"
+          className="group block bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-cyan-500/30 hover:border-cyan-400/60 rounded-3xl p-4 sm:p-5 text-left transition shadow-lg relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 group-hover:scale-105 transition">
+                <HelpCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-xs font-bold text-white group-hover:text-cyan-300 transition">
+                    Nový herní mód: Detektivní výslech
+                  </span>
+                  <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.2 rounded-full font-bold">
+                    v1.6.0
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Polož až 20 zjišťovacích otázek (ANO/NE) a odhal skrytý vyšetřovací spis!
+                </p>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-cyan-400 group-hover:text-cyan-300 shrink-0">
+              <span>Vyzkoušet</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+            </div>
+          </div>
+        </Link>
+      </div>
     </main>
   )
 }
