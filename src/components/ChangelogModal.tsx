@@ -125,7 +125,7 @@ export default function ChangelogModal() {
             <button
                 type="button"
                 onClick={handleOpen}
-                className="group relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-mono text-slate-400 hover:text-slate-200 transition"
+                className="group relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-[11px] font-mono text-slate-400 hover:text-slate-200 transition shrink-0"
             >
                 {hasUnread && (
                     <span className="relative flex h-2 w-2">

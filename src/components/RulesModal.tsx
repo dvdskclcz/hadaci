@@ -205,7 +205,7 @@ export default function RulesModal() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="p-1.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-amber-400 transition"
+        className="p-1.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-amber-400 transition shrink-0"
         title="Jak hrát Hádače"
         aria-label="Pravidla hry"
       >

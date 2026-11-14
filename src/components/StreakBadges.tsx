@@ -28,10 +28,10 @@ export function StreakBadges({ dailyStreak: propDaily, solveStreak: propSolve }:
   }, [propDaily, propSolve])
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold">
+    <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold shrink-0">
       {/* Denní kalendářní série */}
       <div 
-        className="flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"
+        className="flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0"
         title="Denní série (dny v řadě)"
       >
         <span>🔥</span>
@@ -40,7 +40,7 @@ export function StreakBadges({ dailyStreak: propDaily, solveStreak: propSolve }:
 
       {/* Mistrovská série bez zaváhání */}
       <div 
-        className="flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+        className="flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0"
         title="Mistrovská série (uhodnuté hádanky za sebou)"
       >
         <span>🎯</span>

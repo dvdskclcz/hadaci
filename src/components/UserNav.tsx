@@ -70,21 +70,21 @@ export default function UserNav() {
       user.user_metadata?.full_name || user.email?.split('@')[0] || 'Hráč'
 
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full py-1 pl-1 pr-3">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 rounded-full py-0.5 sm:py-1 px-2 sm:px-2.5 min-w-0">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarUrl}
               alt={displayName}
-              className="w-6 h-6 rounded-full object-cover"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center text-xs">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center text-xs shrink-0">
               <UserIcon className="w-3.5 h-3.5" />
             </div>
           )}
-          <span className="text-xs font-semibold text-slate-200 max-w-[100px] truncate">
+          <span className="text-xs font-semibold text-slate-200 max-w-[76px] sm:max-w-[110px] truncate">
             {displayName}
           </span>
         </div>
@@ -93,9 +93,9 @@ export default function UserNav() {
           onClick={handleLogout}
           title="Odhlásit se"
           type="button"
-          className="p-1.5 rounded-full text-slate-400 hover:text-rose-400 hover:bg-slate-800/60 transition"
+          className="p-1 sm:p-1.5 rounded-full text-slate-400 hover:text-rose-400 hover:bg-slate-800/60 transition shrink-0"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
       </div>
     )
