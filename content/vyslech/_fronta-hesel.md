@@ -21,11 +21,13 @@ Tento soubor slouží jako centrální zásobník témat pro tvorbu nových dete
 | 003 | **Černá skříňka v letadle** | `object` | Lehká | ✅ Hotovo | `003-cerna-skrinka` |
 | 004 | **Polární záře** | `concept` | Střední | ✅ Hotovo | `004-polarni-zare` |
 | 005 | **Titanic** | `object` | Lehká | ✅ Hotovo | `005-titanic` |
-| 006 | **Pražské jaro 1968** | `event` | Střední | 💡 Nápad | `006-prazske-jaro-1968` |
-| 007 | **Kostkový cukr** | `object` | Lehká | 💡 Nápad | `007-kostkovy-cukr` |
-| 008 | **Ještěd (vysílač a hotel)** | `place` | Lehká | 💡 Nápad | `008-jested` |
-| 009 | **Remoska** | `object` | Střední | 💡 Nápad | `009-remoska` |
-| 010 | **Emil Zátopek** | `person` | Lehká | 💡 Nápad | `010-emil-zatopek` |
+| 006 | **Ptakopysk podivný** | `concept` | Střední | ✅ Hotovo | `006-ptakopysk-podivny` |
+| 007 | **Věstonická venuše** | `object` | Střední | ✅ Hotovo | `007-vestonicka-venuse` |
+| 008 | **Pražské jaro 1968** | `event` | Střední | 💡 Nápad | `008-prazske-jaro-1968` |
+| 009 | **Kostkový cukr** | `object` | Lehká | 💡 Nápad | `009-kostkovy-cukr` |
+| 010 | **Ještěd (vysílač a hotel)** | `place` | Lehká | 💡 Nápad | `010-jested` |
+| 011 | **Remoska** | `object` | Střední | 💡 Nápad | `011-remoska` |
+| 012 | **Emil Zátopek** | `person` | Lehká | 💡 Nápad | `012-emil-zatopek` |
 
 ---
 
