@@ -7,8 +7,8 @@ const inter = Inter({
   subsets: ['latin', 'latin-ext'],
 })
 
-// Pokud je nastavená proměnná prostředí nebo ostrá doména, použije ji, jinak padá na Vercel
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hadaci.vercel.app'
+// Pokud je nastavená proměnná prostředí, použije ji, jinak kanonickou doménu https://hadaci.cz
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hadaci.cz'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

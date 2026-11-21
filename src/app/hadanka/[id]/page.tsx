@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { connection } from 'next/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -9,6 +10,56 @@ import { formatCzechDate } from '@/lib/utils'
 
 type Props = {
     params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { id } = await params
+    const supabase = await createServerSupabaseClient()
+    const { data: riddle } = await supabase
+        .from('riddles')
+        .select('id, category, publish_date')
+        .eq('id', id)
+        .single()
+
+    if (!riddle) {
+        return {
+            title: 'Hádanka',
+        }
+    }
+
+    const dateFormatted = formatCzechDate(riddle.publish_date)
+    const title = `Hádanka (${dateFormatted})`
+    const description = `Archivní vědomostní hádanka z kategorie ${riddle.category}. Uhádneš dnešní českou osobnost či památku na co nejméně stop?`
+
+    return {
+        title,
+        description,
+        alternates: {
+            canonical: `https://hadaci.cz/hadanka/${riddle.id}`,
+        },
+        openGraph: {
+            title: `${title} | Hádači.cz`,
+            description,
+            url: `https://hadaci.cz/hadanka/${riddle.id}`,
+            siteName: 'Hádači.cz',
+            locale: 'cs_CZ',
+            type: 'website',
+            images: [
+                {
+                    url: '/opengraph-image',
+                    width: 1200,
+                    height: 630,
+                    alt: `Hádanka – Hádači.cz`,
+                },
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${title} | Hádači.cz`,
+            description,
+            images: ['/opengraph-image'],
+        },
+    }
 }
 
 async function RiddleContent({ params }: Props) {

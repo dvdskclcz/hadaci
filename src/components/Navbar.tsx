@@ -55,7 +55,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/zebricek"
+              href="/zebricky"
               title="Síň slávy"
               className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 lg:px-2 xl:px-3 lg:text-xs xl:text-sm rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition shrink-0"
             >

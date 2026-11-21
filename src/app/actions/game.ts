@@ -406,6 +406,7 @@ export async function updateNicknameAction(nickname: string) {
 
     if (error) return { error: error.message }
 
+    revalidatePath('/zebricky')
     revalidatePath('/zebricek')
     revalidatePath('/')
 

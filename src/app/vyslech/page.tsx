@@ -1,12 +1,40 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { connection } from 'next/server'
 import { getActiveDetectiveCaseAction } from '@/app/actions/detective'
 import DetectiveBoard from '@/components/DetectiveBoard'
 
-export const metadata = {
-    title: 'Detektivní výslech | Hádači.cz',
+export const metadata: Metadata = {
+    title: 'Detektivní výslech',
     description:
-        'Polož až 20 zjišťovacích otázek s odpověďmi ANO, NE nebo Nelze ověřit. Odhal hledanou entitu a získej body do síně slávy!',
+        'Polož až 20 zjišťovacích otázek s odpověďmi ANO, NE nebo Nelze ověřit. Odhal skrytý vyšetřovací spis a získej body do síň slávy!',
+    alternates: {
+        canonical: 'https://hadaci.cz/vyslech',
+    },
+    openGraph: {
+        title: 'Detektivní výslech | Hádači.cz',
+        description:
+            'Polož až 20 zjišťovacích otázek (ANO/NE). Prověř své deduktivní schopnosti a odhal vyšetřovací spis bez spoilerů!',
+        url: 'https://hadaci.cz/vyslech',
+        siteName: 'Hádači.cz',
+        locale: 'cs_CZ',
+        type: 'website',
+        images: [
+            {
+                url: '/opengraph-image',
+                width: 1200,
+                height: 630,
+                alt: 'Detektivní výslech – Hádači.cz',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Detektivní výslech | Hádači.cz',
+        description:
+            'Polož až 20 zjišťovacích otázek (ANO/NE). Prověř své deduktivní schopnosti a odhal vyšetřovací spis!',
+        images: ['/opengraph-image'],
+    },
 }
 
 interface DetectivePageProps {

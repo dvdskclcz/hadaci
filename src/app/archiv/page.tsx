@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { connection } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getPublishedDetectiveCasesAction } from '@/app/actions/detective'
@@ -9,6 +10,39 @@ import ArchiveBoard, {
 } from '@/components/ArchiveBoard'
 import TopicSuggestionModal from '@/components/TopicSuggestionModal'
 import { Archive } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Archiv a šuplík',
+  description:
+    'Zahraj si minulé denní vědomostní hádanky a detektivní výslechy ze záznamu, nebo dořeš své resty ze šuplíku.',
+  alternates: {
+    canonical: 'https://hadaci.cz/archiv',
+  },
+  openGraph: {
+    title: 'Archiv hádanek a detektivních spisů | Hádači.cz',
+    description:
+      'Kompletní archiv minulých denních hádanek a vyšetřovacích spisů bez spoilerů. Zvládneš dořešit resty ze šuplíku?',
+    url: 'https://hadaci.cz/archiv',
+    siteName: 'Hádači.cz',
+    locale: 'cs_CZ',
+    type: 'website',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Archiv a šuplík – Hádači.cz',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Archiv hádanek a detektivních spisů | Hádači.cz',
+    description:
+      'Kompletní archiv minulých denních hádanek a vyšetřovacích spisů bez spoilerů.',
+    images: ['/opengraph-image'],
+  },
+}
 
 interface ArchivePageProps {
   searchParams?: Promise<{ filter?: 'all' | 'riddles' | 'detective' }>
