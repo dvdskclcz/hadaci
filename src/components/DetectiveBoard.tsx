@@ -86,6 +86,11 @@ const DIFFICULTY_CONFIG: Record<
     },
 }
 
+function getCaseNumberFromSlug(slug: string): string {
+    const match = slug.match(/^(\d+)/)
+    return match ? `#${match[1]}` : '#???'
+}
+
 export default function DetectiveBoard({
     initialCase,
     allCases,
@@ -314,16 +319,90 @@ export default function DetectiveBoard({
         })
     }
 
-    // Share results handler
-    const handleShare = async () => {
-        const title = formatCaseTitle(initialCase.slug)
-        const text = `🕵️‍♂️ Hádači.cz – Detektivní výslech\n${title}\n✅ Úspěšně vyřešeno na ${questionsLog.length} otázek se ziskem ${score} bodů!\nVyzkoušej své deduktivní schopnosti na: https://hadaci.cz/vyslech?case=${initialCase.slug}`
+    const caseNumber = getCaseNumberFromSlug(initialCase.slug)
 
-        if (navigator?.clipboard) {
-            await navigator.clipboard.writeText(text)
-            setIsCopied(true)
-            setTimeout(() => setIsCopied(false), 2500)
+    // Sestavení sdíleného textu 100% bez spoilerů
+    const buildShareText = (): string => {
+        const emojiRow = questionsLog
+            .map((q) => {
+                if (q.verdict === 'ANO') return '🟩'
+                if (q.verdict === 'NE') return '🟥'
+                return '🟨'
+            })
+            .join('')
+
+        if (status === 'SOLVED') {
+            const lines = [
+                `🕵️ Detektivní výslech ${caseNumber} • Hádači.cz`,
+                `✅ Vyřešeno na ${questionsLog.length}/20 otázek • 🏆 ${score} b.`,
+                ...(emojiRow ? [emojiRow] : []),
+                'https://hadaci.cz/vyslech',
+            ]
+            return lines.join('\n')
+        } else {
+            const qCountLabel = questionsLog.length >= 20 ? '20/20' : `${questionsLog.length}/20`
+            const lines = [
+                `🕵️ Detektivní výslech ${caseNumber} • Hádači.cz`,
+                `❌ Spis zůstal neuzavřen (${qCountLabel} otázek) • 0 b.`,
+                ...(emojiRow ? [emojiRow] : []),
+                'https://hadaci.cz/vyslech',
+            ]
+            return lines.join('\n')
         }
+    }
+
+    const shareText = buildShareText()
+
+    // Kopírování a sdílení výsledku (se záložním fallbackem)
+    const handleShare = async () => {
+        const text = buildShareText()
+
+        // 1. Zkusíme nativní systémové sdílení na mobilu
+        if (typeof navigator !== 'undefined' && navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+            try {
+                await navigator.share({
+                    title: `Detektivní výslech ${caseNumber} • Hádači.cz`,
+                    text,
+                })
+                setIsCopied(true)
+                setTimeout(() => setIsCopied(false), 2500)
+                return
+            } catch (err: any) {
+                if (err?.name === 'AbortError') return
+            }
+        }
+
+        // 2. Standardní schránka navigator.clipboard
+        let success = false
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(text)
+                success = true
+            } catch (err) {
+                console.warn('navigator.clipboard.writeText selhal, zkouším fallback:', err)
+            }
+        }
+
+        // 3. Záložní fallback přes skryté textarea a execCommand('copy')
+        if (!success && typeof document !== 'undefined') {
+            try {
+                const ta = document.createElement('textarea')
+                ta.value = text
+                ta.style.position = 'fixed'
+                ta.style.left = '-9999px'
+                ta.style.top = '-9999px'
+                document.body.appendChild(ta)
+                ta.focus()
+                ta.select()
+                success = document.execCommand('copy')
+                document.body.removeChild(ta)
+            } catch (err) {
+                console.error('execCommand copy fallback selhal:', err)
+            }
+        }
+
+        setIsCopied(true)
+        setTimeout(() => setIsCopied(false), 2500)
     }
 
     return (
@@ -431,23 +510,36 @@ export default function DetectiveBoard({
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-center gap-2 pt-2">
+                        {/* 100% bezpečné sdílení výsledku */}
+                        <div className="pt-2 space-y-3 max-w-sm mx-auto">
                             <button
+                                type="button"
                                 onClick={handleShare}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition border border-slate-700"
+                                className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-500/20 active:scale-95"
                             >
                                 {isCopied ? (
                                     <>
-                                        <Check className="w-4 h-4 text-emerald-400" />
-                                        <span>Zkopírováno!</span>
+                                        <Check className="w-4 h-4 text-slate-950" />
+                                        <span>✅ Zkopírováno do schránky!</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Share2 className="w-4 h-4 text-indigo-400" />
-                                        <span>Sdílet výsledek</span>
+                                        <Share2 className="w-4 h-4" />
+                                        <span>📋 Sdílet výsledek</span>
                                     </>
                                 )}
                             </button>
+
+                            {/* Kompaktní náhled sdílené karty */}
+                            <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 text-left font-mono text-[11px] text-slate-300 whitespace-pre-line leading-relaxed shadow-inner">
+                                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 flex items-center justify-between font-sans">
+                                    <span>Náhled sdíleného textu:</span>
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                                        100% bez spoileru
+                                    </span>
+                                </div>
+                                <div className="select-all">{shareText}</div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -467,6 +559,38 @@ export default function DetectiveBoard({
                                     ? 'Vyčerpal jsi všechny 3 pokusy na finální tip. Tajenka zůstává skrytá.'
                                     : 'Byl vyčerpán limit 20 otázek. Případ byl odložen do Šuplíku.'}
                             </p>
+                        </div>
+
+                        {/* 100% bezpečné sdílení výsledku */}
+                        <div className="pt-1 space-y-3 max-w-sm mx-auto">
+                            <button
+                                type="button"
+                                onClick={handleShare}
+                                className="w-full py-3 px-5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-95"
+                            >
+                                {isCopied ? (
+                                    <>
+                                        <Check className="w-4 h-4 text-emerald-400" />
+                                        <span className="text-emerald-400">✅ Zkopírováno do schránky!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Share2 className="w-4 h-4 text-rose-400" />
+                                        <span>📋 Sdílet výsledek</span>
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Kompaktní náhled sdílené karty */}
+                            <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 text-left font-mono text-[11px] text-slate-300 whitespace-pre-line leading-relaxed shadow-inner">
+                                <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 flex items-center justify-between font-sans">
+                                    <span>Náhled sdíleného textu:</span>
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                                        100% bez spoileru
+                                    </span>
+                                </div>
+                                <div className="select-all">{shareText}</div>
+                            </div>
                         </div>
 
                         <div className="pt-2">
