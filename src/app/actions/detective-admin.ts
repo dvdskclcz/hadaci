@@ -624,3 +624,161 @@ export async function testDetectiveGuessAction(params: {
     }
 }
 
+export interface AdminPlayerQuestionItem {
+    id: string
+    caseId: string
+    caseSlug: string
+    caseSecretAnswer: string
+    userNickname?: string
+    userId?: string
+    question: string
+    verdict: 'ANO' | 'NE' | 'NELZE_OVERIT'
+    timestamp: string
+    penalty?: number
+    sessionStatus?: string
+}
+
+export interface GetDetectivePlayerQuestionsParams {
+    caseSlug?: string
+    verdict?: 'ALL' | 'ANO' | 'NE' | 'NELZE_OVERIT'
+    limit?: number
+}
+
+// 8. Načtení reálně položených otázek hráčů z databáze
+export async function getDetectivePlayerQuestionsAction(params?: GetDetectivePlayerQuestionsParams): Promise<{
+    questions?: AdminPlayerQuestionItem[]
+    cases?: Array<{ id: string; slug: string; secret_answer: string }>
+    totalFound?: number
+    stats?: {
+        total: number
+        ano: number
+        ne: number
+        nelzeOverit: number
+    }
+    error?: string
+}> {
+    const isAuthenticated = await verifyAdminSession()
+    if (!isAuthenticated) return { error: 'Neautorizovaný přístup.' }
+
+    const adminSupabase = getAdminSupabaseClient()
+
+    try {
+        // 1. Načteme všechny případy pro mapování ID -> slug a secret_answer
+        const { data: casesData, error: casesError } = await adminSupabase
+            .from('detective_cases')
+            .select('id, slug, secret_answer')
+            .order('publish_date', { ascending: false })
+
+        if (casesError) {
+            console.error('Chyba při načítání případů v getDetectivePlayerQuestionsAction:', casesError)
+        }
+
+        const casesMap = new Map<string, { id: string; slug: string; secret_answer: string }>()
+        const allCasesList = (casesData || []).map((c: any) => {
+            const item = { id: c.id, slug: c.slug, secret_answer: c.secret_answer }
+            casesMap.set(c.id, item)
+            casesMap.set(c.slug, item)
+            return item
+        })
+
+        // 2. Načteme herní stavy hráčů z user_detective_state
+        let query = adminSupabase
+            .from('user_detective_state')
+            .select('id, user_id, case_id, status, questions_log, updated_at')
+            .order('updated_at', { ascending: false })
+            .limit(200)
+
+        // Pokud je filtrováno podle konkrétního případu už na úrovni DB
+        if (params?.caseSlug && params.caseSlug !== 'ALL') {
+            const targetCase = casesMap.get(params.caseSlug)
+            if (targetCase) {
+                query = query.eq('case_id', targetCase.id)
+            }
+        }
+
+        const { data: statesData, error: statesError } = await query
+
+        if (statesError) {
+            return { error: `Chyba při čtení z databáze: ${statesError.message}` }
+        }
+
+        // 3. Načteme přezdívky hráčů z profiles pro obohacení
+        const userIds = Array.from(new Set((statesData || []).map((s: any) => s.user_id).filter(Boolean)))
+        const profileNickMap = new Map<string, string>()
+        if (userIds.length > 0) {
+            const { data: profiles } = await adminSupabase
+                .from('profiles')
+                .select('id, nickname')
+                .in('id', userIds)
+
+            if (profiles) {
+                profiles.forEach((p: any) => {
+                    if (p.id && p.nickname) {
+                        profileNickMap.set(p.id, p.nickname)
+                    }
+                })
+            }
+        }
+
+        // 4. Rozbalíme JSON pole questions_log do jednotlivých záznamů
+        const allQuestions: AdminPlayerQuestionItem[] = []
+
+        for (const state of statesData || []) {
+            const caseInfo = casesMap.get(state.case_id)
+            const questionsLog = Array.isArray(state.questions_log) ? state.questions_log : []
+            const nickname = profileNickMap.get(state.user_id) || `Hráč #${state.user_id.slice(0, 6)}`
+
+            for (const q of questionsLog) {
+                if (!q || !q.question) continue
+                allQuestions.push({
+                    id: q.id || `q_${Math.random().toString(36).substring(2, 9)}`,
+                    caseId: state.case_id,
+                    caseSlug: caseInfo?.slug || 'neznamy-spis',
+                    caseSecretAnswer: caseInfo?.secret_answer || 'Neznámá tajenka',
+                    userId: state.user_id,
+                    userNickname: nickname,
+                    question: q.question,
+                    verdict: q.verdict || 'NELZE_OVERIT',
+                    timestamp: q.timestamp || state.updated_at,
+                    penalty: q.penalty ?? 4,
+                    sessionStatus: state.status,
+                })
+            }
+        }
+
+        // 5. Seřadíme od nejnovějších
+        allQuestions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+        // Statistiky ze všech načtených
+        const stats = {
+            total: allQuestions.length,
+            ano: allQuestions.filter((q) => q.verdict === 'ANO').length,
+            ne: allQuestions.filter((q) => q.verdict === 'NE').length,
+            nelzeOverit: allQuestions.filter((q) => q.verdict === 'NELZE_OVERIT').length,
+        }
+
+        // 6. Aplikujeme filtry
+        let filtered = allQuestions
+        if (params?.caseSlug && params.caseSlug !== 'ALL') {
+            filtered = filtered.filter((q) => q.caseSlug === params.caseSlug)
+        }
+        if (params?.verdict && params.verdict !== 'ALL') {
+            filtered = filtered.filter((q) => q.verdict === params.verdict)
+        }
+
+        const limit = params?.limit || 150
+        const resultQuestions = filtered.slice(0, limit)
+
+        return {
+            questions: resultQuestions,
+            cases: allCasesList,
+            totalFound: filtered.length,
+            stats,
+        }
+    } catch (err: any) {
+        console.error('Chyba v getDetectivePlayerQuestionsAction:', err)
+        return { error: err.message || 'Chyba při načítání položených otázek.' }
+    }
+}
+
+

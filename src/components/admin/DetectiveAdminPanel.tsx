@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
     AdminDetectiveCase,
     AdminDetectiveFact,
+    AdminPlayerQuestionItem,
     getAdminDetectiveCasesAction,
     saveDetectiveCaseAction,
     getAdminCaseFactsAction,
@@ -11,6 +12,7 @@ import {
     deleteDetectiveFactAction,
     testDetectiveQuestionAction,
     testDetectiveGuessAction,
+    getDetectivePlayerQuestionsAction,
 } from '@/app/actions/detective-admin'
 import { formatCzechDate } from '@/lib/utils'
 import {
@@ -38,6 +40,9 @@ import {
     Key,
     ShieldAlert,
     Cpu,
+    MessageSquare,
+    RefreshCw,
+    Filter,
 } from 'lucide-react'
 
 type CaseFilter = 'all' | 'published' | 'scheduled' | 'draft'
@@ -106,8 +111,8 @@ export default function DetectiveAdminPanel() {
     const [savingMetadata, setSavingMetadata] = useState(false)
     const [metadataFeedback, setMetadataFeedback] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
-    // 3. Aktivní pod-záložka: 'simulator' | 'facts'
-    const [activeSubTab, setActiveSubTab] = useState<'simulator' | 'facts'>('simulator')
+    // 3. Aktivní pod-záložka: 'simulator' | 'facts' | 'player_questions'
+    const [activeSubTab, setActiveSubTab] = useState<'simulator' | 'facts' | 'player_questions'>('simulator')
 
     // 4. Fakta spisu
     const [facts, setFacts] = useState<AdminDetectiveFact[]>([])
@@ -127,6 +132,15 @@ export default function DetectiveAdminPanel() {
     const [testingQuestion, setTestingQuestion] = useState(false)
     const [testingGuess, setTestingGuess] = useState(false)
     const [history, setHistory] = useState<TestHistoryItem[]>([])
+
+    // 6. Ostré otázky hráčů
+    const [playerQuestions, setPlayerQuestions] = useState<AdminPlayerQuestionItem[]>([])
+    const [loadingPlayerQuestions, setLoadingPlayerQuestions] = useState(false)
+    const [pqFilterCase, setPqFilterCase] = useState<string>('ALL')
+    const [pqFilterVerdict, setPqFilterVerdict] = useState<'ALL' | 'ANO' | 'NE' | 'NELZE_OVERIT'>('ALL')
+    const [pqSearchQuery, setPqSearchQuery] = useState('')
+    const [pqStats, setPqStats] = useState<{ total: number; ano: number; ne: number; nelzeOverit: number } | null>(null)
+    const [replayingQuestionId, setReplayingQuestionId] = useState<string | null>(null)
 
     const todayStr = new Date().toISOString().split('T')[0]
 
@@ -407,6 +421,75 @@ export default function DetectiveAdminPanel() {
     const handleClearHistory = () => {
         setHistory([])
     }
+
+    // --- OSTRÉ OTÁZKY HRÁČŮ ---
+    const loadPlayerQuestions = useCallback(
+        async (caseSlug?: string, verdict?: 'ALL' | 'ANO' | 'NE' | 'NELZE_OVERIT') => {
+            setLoadingPlayerQuestions(true)
+            const res = await getDetectivePlayerQuestionsAction({
+                caseSlug: caseSlug ?? pqFilterCase,
+                verdict: verdict ?? pqFilterVerdict,
+                limit: 200,
+            })
+            setLoadingPlayerQuestions(false)
+            if (res.questions) {
+                setPlayerQuestions(res.questions)
+                if (res.stats) {
+                    setPqStats(res.stats)
+                }
+            }
+        },
+        [pqFilterCase, pqFilterVerdict]
+    )
+
+    useEffect(() => {
+        if (activeSubTab === 'player_questions') {
+            loadPlayerQuestions(pqFilterCase, pqFilterVerdict)
+        }
+    }, [activeSubTab, pqFilterCase, pqFilterVerdict, loadPlayerQuestions])
+
+    const handleVerifyInRentgen = async (pq: AdminPlayerQuestionItem) => {
+        setReplayingQuestionId(pq.id)
+        // 1. Nastavíme správný případ
+        if (selectedCaseId !== pq.caseId) {
+            setSelectedCaseId(pq.caseId)
+        }
+        // 2. Přepneme na simulátor
+        setActiveSubTab('simulator')
+        setTestTabMode('question')
+        setQuestionInput(pq.question)
+
+        // 3. Spustíme okamžitě test v Rentgenu
+        setTestingQuestion(true)
+        const res = await testDetectiveQuestionAction({
+            caseId: pq.caseId,
+            question: pq.question,
+        })
+        setTestingQuestion(false)
+        setReplayingQuestionId(null)
+
+        // 4. Přidáme do historie s automaticky rozbaleným Rentgenem
+        const newItem: TestHistoryItem = {
+            id: String(Date.now()),
+            type: 'question',
+            query: pq.question,
+            timestamp: new Date().toLocaleTimeString('cs-CZ'),
+            questionResult: res,
+            isExpandedRentgen: true,
+        }
+        setHistory((prev) => [newItem, ...prev])
+    }
+
+    const filteredPlayerQuestions = playerQuestions.filter((pq) => {
+        if (pqSearchQuery.trim()) {
+            const q = pqSearchQuery.toLowerCase()
+            const textMatch = pq.question.toLowerCase().includes(q)
+            const caseMatch = pq.caseSecretAnswer.toLowerCase().includes(q) || pq.caseSlug.toLowerCase().includes(q)
+            const nickMatch = (pq.userNickname || '').toLowerCase().includes(q)
+            if (!textMatch && !caseMatch && !nickMatch) return false
+        }
+        return true
+    })
 
     // Filtrované případy pro výběr
     const filteredCases = cases.filter((c) => {
@@ -814,6 +897,18 @@ export default function DetectiveAdminPanel() {
                             <Database className="w-4 h-4" />
                             <span>📚 Editor vyšetřovacího spisu ({facts.length} faktů)</span>
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveSubTab('player_questions')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${activeSubTab === 'player_questions'
+                                    ? 'bg-cyan-500 text-slate-950 shadow-md'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>💬 Ostré otázky hráčů {pqStats ? `(${pqStats.total})` : ''}</span>
+                        </button>
                     </div>
 
                     {/* ========================================================= */}
@@ -1218,6 +1313,275 @@ export default function DetectiveAdminPanel() {
                                         badgeColor="bg-amber-500/20 text-amber-300 border-amber-500/30"
                                     />
                                 </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ========================================================= */}
+                    {/* POD-ZÁLOŽKA C: OSTRÉ OTÁZKY HRÁČŮ Z DATABÁZE              */}
+                    {/* ========================================================= */}
+                    {activeSubTab === 'player_questions' && (
+                        <div className="space-y-4">
+                            {/* Přehledová lišta metrik */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4">
+                                    <span className="text-[11px] font-semibold text-slate-400 block mb-1">Celkem dotazů</span>
+                                    <span className="text-xl sm:text-2xl font-black text-white">{pqStats?.total ?? 0}</span>
+                                </div>
+
+                                <div className="bg-slate-900 border border-emerald-500/20 rounded-2xl p-3 sm:p-4">
+                                    <span className="text-[11px] font-semibold text-emerald-400 block mb-1">Verdikt ANO</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-xl sm:text-2xl font-black text-emerald-400">{pqStats?.ano ?? 0}</span>
+                                        {pqStats && pqStats.total > 0 && (
+                                            <span className="text-[10px] text-slate-500 font-mono">
+                                                ({Math.round((pqStats.ano / pqStats.total) * 100)} %)
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-900 border border-amber-500/20 rounded-2xl p-3 sm:p-4">
+                                    <span className="text-[11px] font-semibold text-amber-400 block mb-1">Verdikt NE</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-xl sm:text-2xl font-black text-amber-400">{pqStats?.ne ?? 0}</span>
+                                        {pqStats && pqStats.total > 0 && (
+                                            <span className="text-[10px] text-slate-500 font-mono">
+                                                ({Math.round((pqStats.ne / pqStats.total) * 100)} %)
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={`rounded-2xl p-3 sm:p-4 border ${
+                                    (pqStats?.nelzeOverit ?? 0) > 0
+                                        ? 'bg-rose-950/20 border-rose-500/40 shadow-sm shadow-rose-950/30'
+                                        : 'bg-slate-900 border-slate-800'
+                                }`}>
+                                    <span className="text-[11px] font-bold text-rose-400 flex items-center gap-1 mb-1">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                        <span>NELZE OVĚŘIT</span>
+                                    </span>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-xl sm:text-2xl font-black text-rose-300">{pqStats?.nelzeOverit ?? 0}</span>
+                                        {pqStats && pqStats.total > 0 && (
+                                            <span className="text-[10px] text-rose-400/70 font-mono">
+                                                ({Math.round((pqStats.nelzeOverit / pqStats.total) * 100)} %)
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Lišta filtrů a vyhledávání */}
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {/* Filtr případu */}
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                            <FolderKanban className="w-3.5 h-3.5 text-cyan-400" />
+                                            <span>Spis:</span>
+                                        </div>
+                                        <select
+                                            value={pqFilterCase}
+                                            onChange={(e) => setPqFilterCase(e.target.value)}
+                                            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                                        >
+                                            <option value="ALL">Všechny spisy ({cases.length})</option>
+                                            {cases.map((c) => (
+                                                <option key={c.id} value={c.slug}>
+                                                    Spis #{c.slug.split('-')[0]} – {c.secret_answer}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {/* Tlačítko obnovit */}
+                                        <button
+                                            type="button"
+                                            onClick={() => loadPlayerQuestions()}
+                                            disabled={loadingPlayerQuestions}
+                                            className="p-1.5 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition disabled:opacity-50"
+                                            title="Znovu načíst z databáze"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${loadingPlayerQuestions ? 'animate-spin text-cyan-400' : ''}`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Vyhledávání v textu */}
+                                    <div className="relative min-w-[200px]">
+                                        <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            value={pqSearchQuery}
+                                            onChange={(e) => setPqSearchQuery(e.target.value)}
+                                            placeholder="Hledat v dotazech..."
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
+                                        />
+                                        {pqSearchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setPqSearchQuery('')}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Přepínač verdiktů (rychlé záložky) */}
+                                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/60">
+                                    <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
+                                        <Filter className="w-3 h-3 text-slate-500" />
+                                        <span>Verdikt:</span>
+                                    </span>
+                                    {(['ALL', 'ANO', 'NE', 'NELZE_OVERIT'] as const).map((v) => {
+                                        const isActive = pqFilterVerdict === v
+                                        let label = 'Všechny'
+                                        let count = pqStats?.total ?? 0
+                                        let activeClass = 'bg-cyan-500 text-slate-950 font-bold'
+                                        if (v === 'ANO') {
+                                            label = 'ANO'
+                                            count = pqStats?.ano ?? 0
+                                            activeClass = 'bg-emerald-500 text-slate-950 font-bold'
+                                        } else if (v === 'NE') {
+                                            label = 'NE'
+                                            count = pqStats?.ne ?? 0
+                                            activeClass = 'bg-amber-500 text-slate-950 font-bold'
+                                        } else if (v === 'NELZE_OVERIT') {
+                                            label = '⚠️ Nelze ověřit'
+                                            count = pqStats?.nelzeOverit ?? 0
+                                            activeClass = 'bg-rose-600 text-white font-black ring-2 ring-rose-400/50'
+                                        }
+
+                                        return (
+                                            <button
+                                                key={v}
+                                                type="button"
+                                                onClick={() => setPqFilterVerdict(v)}
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] transition flex items-center gap-1.5 ${
+                                                    isActive
+                                                        ? activeClass
+                                                        : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white hover:bg-slate-800'
+                                                } ${v === 'NELZE_OVERIT' && !isActive && count > 0 ? 'border-rose-500/30 text-rose-300' : ''}`}
+                                            >
+                                                <span>{label}</span>
+                                                <span className={`text-[9px] px-1.5 py-0.2 rounded-full ${
+                                                    isActive ? 'bg-black/20 text-current' : 'bg-slate-800 text-slate-300'
+                                                }`}>
+                                                    {count}
+                                                </span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Seznam dotazů */}
+                            {loadingPlayerQuestions ? (
+                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                                    <span>Načítám položené otázky hráčů z databáze...</span>
+                                </div>
+                            ) : filteredPlayerQuestions.length === 0 ? (
+                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-xs">
+                                    <MessageSquare className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+                                    <p>Nebyly nalezeny žádné otázky odpovídající zvolenému filtru.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2.5">
+                                    <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
+                                        <span>Zobrazeno {filteredPlayerQuestions.length} dotazů</span>
+                                        <span className="text-[10px] text-slate-500">Řazeno od nejnovějších</span>
+                                    </div>
+
+                                    {filteredPlayerQuestions.map((pq) => {
+                                        const isReplaying = replayingQuestionId === pq.id
+                                        return (
+                                            <div
+                                                key={pq.id}
+                                                className={`p-3.5 sm:p-4 rounded-2xl border transition bg-slate-900/90 ${
+                                                    pq.verdict === 'NELZE_OVERIT'
+                                                        ? 'border-rose-500/30 hover:border-rose-500/60 bg-rose-950/10'
+                                                        : 'border-slate-800 hover:border-slate-700'
+                                                }`}
+                                            >
+                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                                                    <div className="space-y-1.5 flex-1 min-w-0">
+                                                        {/* Horní řádek: Případ, Verdikt a Čas */}
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {/* Spis badge */}
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-mono font-bold text-cyan-400">
+                                                                <span>Spis #{pq.caseSlug.split('-')[0]}</span>
+                                                                <span className="text-slate-500">•</span>
+                                                                <span className="text-slate-300 font-sans">{pq.caseSecretAnswer}</span>
+                                                            </span>
+
+                                                            {/* Verdikt badge */}
+                                                            {pq.verdict === 'ANO' && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-black text-emerald-300">
+                                                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                                                    <span>ANO</span>
+                                                                </span>
+                                                            )}
+                                                            {pq.verdict === 'NE' && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-[10px] font-black text-amber-300">
+                                                                    <X className="w-3 h-3 text-amber-400" />
+                                                                    <span>NE</span>
+                                                                </span>
+                                                            )}
+                                                            {pq.verdict === 'NELZE_OVERIT' && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[10px] font-black text-rose-300">
+                                                                    <AlertCircle className="w-3 h-3 text-rose-400" />
+                                                                    <span>NELZE OVĚŘIT</span>
+                                                                </span>
+                                                            )}
+
+                                                            {/* Hráč a čas */}
+                                                            <span className="text-[10px] text-slate-500 ml-auto sm:ml-0 font-mono">
+                                                                {formatCzechDate(pq.timestamp)} {new Date(pq.timestamp).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+
+                                                            {pq.userNickname && (
+                                                                <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-md text-slate-400 border border-slate-800/80">
+                                                                    👤 {pq.userNickname}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Text otázky */}
+                                                        <div className="text-sm font-semibold text-white leading-relaxed pt-0.5">
+                                                            „{pq.question}“
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Akční tlačítko: Ověřit v Rentgenu */}
+                                                    <div className="shrink-0 self-end sm:self-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleVerifyInRentgen(pq)}
+                                                            disabled={isReplaying || testingQuestion}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/60 text-cyan-400 hover:text-cyan-300 text-xs font-bold transition shadow-sm disabled:opacity-50"
+                                                            title="Automaticky vybere tento případ, předvyplní dotaz a spustí analýzu v simulátoru AI"
+                                                        >
+                                                            {isReplaying ? (
+                                                                <>
+                                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                    <span>Analyzuji...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Cpu className="w-3.5 h-3.5" />
+                                                                    <span>🔍 Ověřit v Rentgenu</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
                             )}
                         </div>
                     )}
