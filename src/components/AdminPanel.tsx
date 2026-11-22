@@ -14,6 +14,7 @@ import {
 } from '@/app/actions/admin'
 import { formatCzechDate } from '@/lib/utils'
 import DetectiveAdminPanel from '@/components/admin/DetectiveAdminPanel'
+import PromoGeneratorPanel from '@/components/admin/PromoGeneratorPanel'
 import {
     Lock,
     PlusCircle,
@@ -33,6 +34,7 @@ import {
     XCircle,
     Sparkles,
     AlertTriangle,
+    Megaphone,
 } from 'lucide-react'
 
 export type RiddleOverview = {
@@ -96,8 +98,8 @@ export default function AdminPanel({
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
 
-    // Přepínání 4 záložek
-    const [activeTab, setActiveTab] = useState<'riddles' | 'suggestions' | 'reports' | 'detective'>('riddles')
+    // Přepínání 5 záložek
+    const [activeTab, setActiveTab] = useState<'riddles' | 'suggestions' | 'reports' | 'detective' | 'promo'>('riddles')
 
     // Stavy pro hlášení a reklamace
     const [reportsList, setReportsList] = useState<ReportItem[]>(existingReports)
@@ -419,6 +421,18 @@ export default function AdminPanel({
                     >
                         <Search className="w-3.5 h-3.5" />
                         <span>Detektivní výslech</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('promo')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${activeTab === 'promo'
+                                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                    >
+                        <Megaphone className="w-3.5 h-3.5" />
+                        <span>📣 Promo & Sítě</span>
                     </button>
                 </div>
 
@@ -1064,6 +1078,15 @@ export default function AdminPanel({
             {activeTab === 'detective' && (
                 <div className="space-y-6 animate-fade-in">
                     <DetectiveAdminPanel />
+                </div>
+            )}
+
+            {/* ========================================================= */}
+            {/* ZÁLOŽKA 5: PROMO & SÍTĚ                                   */}
+            {/* ========================================================= */}
+            {activeTab === 'promo' && (
+                <div className="space-y-6 animate-fade-in">
+                    <PromoGeneratorPanel />
                 </div>
             )}
         </div>

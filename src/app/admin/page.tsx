@@ -86,7 +86,7 @@ export default function AdminPage() {
                 <h1 className="text-3xl font-black text-amber-400 tracking-tight mb-1">
                     Konzole Hádači.cz
                 </h1>
-                <p className="text-xs text-slate-400">Správa edičního plánu, námětů, reklamací a detektivního výslechu</p>
+                <p className="text-xs text-slate-400">Správa edičního plánu, námětů, reklamací, detektivního výslechu a promo generátoru</p>
             </div>
 
             <Suspense
