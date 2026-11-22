@@ -124,6 +124,9 @@ export default function DetectiveBoard({
     const [secretAnswer, setSecretAnswer] = useState<string | null>(
         initialUserState?.secret_answer || null
     )
+    const [summary, setSummary] = useState<string | null>(
+        initialUserState?.summary || null
+    )
 
     // Form inputs and UI state
     const [mode, setMode] = useState<'QUESTION' | 'GUESS'>('QUESTION')
@@ -147,6 +150,7 @@ export default function DetectiveBoard({
                     if (parsed.wrongGuesses !== undefined) setWrongGuesses(parsed.wrongGuesses)
                     if (parsed.status) setStatus(parsed.status)
                     if (parsed.secretAnswer) setSecretAnswer(parsed.secretAnswer)
+                    if (parsed.summary) setSummary(parsed.summary)
                     if (parsed.isDrawerRetry !== undefined) setIsDrawerRetry(parsed.isDrawerRetry)
                 }
             } catch (err) {
@@ -165,6 +169,7 @@ export default function DetectiveBoard({
                     wrongGuesses,
                     status,
                     secretAnswer,
+                    summary,
                     isDrawerRetry,
                 }
                 localStorage.setItem(
@@ -175,7 +180,7 @@ export default function DetectiveBoard({
                 console.warn('Nelze uložit stav do localStorage:', err)
             }
         }
-    }, [questionsLog, score, wrongGuesses, status, secretAnswer, isDrawerRetry, initialCase.id, initialUserState])
+    }, [questionsLog, score, wrongGuesses, status, secretAnswer, summary, isDrawerRetry, initialCase.id, initialUserState])
 
     const entity = ENTITY_CONFIG[initialCase.entity_type] || ENTITY_CONFIG.concept
     const difficulty = DIFFICULTY_CONFIG[initialCase.difficulty] || DIFFICULTY_CONFIG.medium
@@ -270,6 +275,7 @@ export default function DetectiveBoard({
                 setStatus('SOLVED')
                 setScore(res.score ?? score)
                 setSecretAnswer(res.secretAnswer || null)
+                setSummary(res.summary || null)
                 setInfoMessage({
                     type: 'success',
                     text: res.message || 'Gratulujeme! Případ byl úspěšně vyřešen.',
@@ -313,6 +319,8 @@ export default function DetectiveBoard({
         setScore(50)
         setWrongGuesses(0)
         setQuestionsLog([])
+        setSecretAnswer(null)
+        setSummary(null)
         setInfoMessage({
             type: 'info',
             text: 'Režim odvety zahájen! Hraješ o 50 bodů. Můžeš položit dalších 20 otázek.',
@@ -541,6 +549,21 @@ export default function DetectiveBoard({
                                 <div className="select-all">{shareText}</div>
                             </div>
                         </div>
+
+                        {/* Závěrečná vzdělávací rekapitulace („O co šlo“) */}
+                        {summary && (
+                            <div className="pt-2 max-w-sm mx-auto text-left">
+                                <div className="bg-slate-950/70 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-inner">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 mb-2 uppercase tracking-wider font-sans">
+                                        <span className="text-sm">📖</span>
+                                        <span>O co šlo</span>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+                                        {summary}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

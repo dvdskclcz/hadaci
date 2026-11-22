@@ -44,6 +44,7 @@ export interface UserDetectiveState {
     wrong_guesses_count: number
     is_drawer_repair: boolean
     secret_answer?: string | null
+    summary?: string | null
 }
 
 // Pomocná funkce pro aktualizaci sérií
@@ -255,18 +256,19 @@ export async function getActiveDetectiveCaseAction(slug?: string): Promise<{
                     is_drawer_repair: dbState.is_drawer_repair || false,
                 }
 
-                // Tajenku vracíme POUZE pokud je případ již úspěšně vyřešen
+                // Tajenku a rekapitulaci vracíme POUZE pokud je případ již úspěšně vyřešen
                 if (dbState.status === 'SOLVED') {
                     const { data: secretData, error: secretError } = await adminSupabase
                         .from('detective_cases')
-                        .select('secret_answer')
+                        .select('secret_answer, summary')
                         .eq('id', targetCase.id)
                         .maybeSingle()
 
                     if (secretError) {
-                        console.warn('⚠️ Chyba při načítání secret_answer pro vyřešený případ:', secretError)
+                        console.warn('⚠️ Chyba při načítání secret_answer/summary pro vyřešený případ:', secretError)
                     }
                     userState.secret_answer = secretData?.secret_answer || null
+                    userState.summary = secretData?.summary || null
                 }
             }
         }
@@ -303,6 +305,7 @@ export interface DetectiveArchiveCase {
     difficulty: 'easy' | 'medium' | 'hard'
     initial_clue: string
     secret_answer?: string | null
+    summary?: string | null
 }
 
 export interface DetectiveUserArchiveState {
@@ -311,6 +314,7 @@ export interface DetectiveUserArchiveState {
     questions_count: number
     is_drawer_repair: boolean
     secret_answer?: string | null
+    summary?: string | null
     updated_at?: string
 }
 
@@ -379,14 +383,15 @@ export async function getPublishedDetectiveCasesAction(): Promise<{
             if (statesError) {
                 console.warn('⚠️ Chyba při čtení user_detective_state pro archiv:', statesError)
             } else if (states) {
-                // Načteme secret_answer VÝHRADNĚ pro úspěšně vyřešené případy
+                // Načteme secret_answer a summary VÝHRADNĚ pro úspěšně vyřešené případy
                 const solvedCaseIds = states.filter((s) => s.status === 'SOLVED').map((s) => s.case_id)
                 const solvedSecretMap = new Map<string, string>()
+                const solvedSummaryMap = new Map<string, string>()
 
                 if (solvedCaseIds.length > 0) {
                     const { data: secretRows, error: secErr } = await adminSupabase
                         .from('detective_cases')
-                        .select('id, secret_answer')
+                        .select('id, secret_answer, summary')
                         .in('id', solvedCaseIds)
 
                     if (secErr) {
@@ -394,6 +399,9 @@ export async function getPublishedDetectiveCasesAction(): Promise<{
                     } else if (secretRows) {
                         for (const row of secretRows) {
                             solvedSecretMap.set(row.id, row.secret_answer)
+                            if (row.summary) {
+                                solvedSummaryMap.set(row.id, row.summary)
+                            }
                         }
                     }
                 }
@@ -402,6 +410,7 @@ export async function getPublishedDetectiveCasesAction(): Promise<{
                     const qLog = Array.isArray(s.questions_log) ? s.questions_log : []
                     const isSolved = s.status === 'SOLVED'
                     const caseSecretAnswer = isSolved ? (solvedSecretMap.get(s.case_id) || null) : null
+                    const caseSummary = isSolved ? (solvedSummaryMap.get(s.case_id) || null) : null
 
                     userStates[s.case_id] = {
                         status: s.status,
@@ -409,6 +418,7 @@ export async function getPublishedDetectiveCasesAction(): Promise<{
                         questions_count: qLog.length,
                         is_drawer_repair: Boolean(s.is_drawer_repair),
                         secret_answer: caseSecretAnswer,
+                        summary: caseSummary,
                         updated_at: s.updated_at,
                     }
                 }
@@ -418,10 +428,11 @@ export async function getPublishedDetectiveCasesAction(): Promise<{
         console.warn('⚠️ Chyba autentizace při načítání stavů archivu výslechu:', authErr)
     }
 
-    // Bezpečná úprava: secret_answer je přítomen pouze u SOLVED případů
+    // Bezpečná úprava: secret_answer i summary jsou přítomny pouze u SOLVED případů
     const safeCases = cases.map((c) => ({
         ...c,
         secret_answer: userStates[c.id]?.status === 'SOLVED' ? userStates[c.id]?.secret_answer || null : null,
+        summary: userStates[c.id]?.status === 'SOLVED' ? userStates[c.id]?.summary || null : null,
     }))
 
     return { cases: safeCases, userStates }
@@ -749,6 +760,7 @@ export async function submitDetectiveGuessAction(
     isTypo?: boolean
     score?: number
     secretAnswer?: string
+    summary?: string | null
     message?: string
     newWrongCount?: number
     isGameOver?: boolean
@@ -775,7 +787,7 @@ export async function submitDetectiveGuessAction(
     // Načteme tajenku a synonyma ze serveru přes admin klienta s kontrolou publish_date <= dnes
     const { data: caseData, error } = await adminSupabase
         .from('detective_cases')
-        .select('secret_answer, accepted_synonyms')
+        .select('secret_answer, accepted_synonyms, summary')
         .eq('id', caseId)
         .lte('publish_date', todayDateStr)
         .eq('is_active', true)
@@ -821,6 +833,7 @@ export async function submitDetectiveGuessAction(
                     correct: true,
                     score: dbState.score_earned,
                     secretAnswer: caseData.secret_answer,
+                    summary: caseData.summary || null,
                     message: 'Tento případ jsi již úspěšně vyřešil!',
                 }
             }
@@ -878,6 +891,7 @@ export async function submitDetectiveGuessAction(
             correct: true,
             score: effectiveScore,
             secretAnswer: caseData.secret_answer,
+            summary: caseData.summary || null,
             streaks: finalStreaks,
             message: 'Brilantní dedukce! Případ byl úspěšně vyřešen.',
         }

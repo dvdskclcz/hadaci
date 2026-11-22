@@ -28,6 +28,7 @@ export interface AdminDetectiveCase {
     secret_answer: string
     accepted_synonyms: string[]
     initial_clue: string
+    summary?: string | null
     is_active: boolean
     created_at: string
     updated_at: string
@@ -49,6 +50,7 @@ export interface SaveDetectiveCasePayload {
     difficulty: 'easy' | 'medium' | 'hard'
     entity_type: 'person' | 'place' | 'object' | 'event' | 'concept'
     initial_clue: string
+    summary?: string | null
     secret_answer: string
     accepted_synonyms: string[] | string
     is_active: boolean
@@ -148,6 +150,7 @@ export async function saveDetectiveCaseAction(payload: SaveDetectiveCasePayload)
         difficulty,
         entity_type,
         initial_clue,
+        summary,
         secret_answer,
         accepted_synonyms,
         is_active,
@@ -174,6 +177,7 @@ export async function saveDetectiveCaseAction(payload: SaveDetectiveCasePayload)
             difficulty,
             entity_type,
             initial_clue: initial_clue.trim(),
+            summary: summary !== undefined ? (summary ? summary.trim() : null) : undefined,
             secret_answer: secret_answer.trim(),
             accepted_synonyms: synonymsArray,
             is_active: Boolean(is_active),

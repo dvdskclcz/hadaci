@@ -25,6 +25,7 @@ Soubor musí být validní JSON v kódování UTF-8 s následující strukturou:
     "bratr Josefa Čapka"
   ],
   "initial_clue": "Svými slovy varoval před stroji i mloky a obohatil světové slovníky.",
+  "summary": "Karel Čapek patřil k nejvýznamnějším českým spisovatelům meziválečného Československa. Celosvětově proslul hrou R.U.R., která díky nápadu bratra Josefa darovala světu slovo „robot“. Jeho varovná díla dodnes fascinují svou nadčasovou vizí před totalitou i technologickou zkázou.",
   "core_facts": [
     "...",
     "..."
@@ -73,6 +74,10 @@ Povolené hodnoty:
 ### `initial_clue` (string)
 - Jediná úvodní věta, kterou hráč uvidí na začátku výslechu jako vodítko.
 - Styl: poetická hádanka, nápověda v náznacích. **Nesmí** přímo jmenovat klíčové dílo nebo prozradit podstatu.
+
+### `summary` (string)
+- 2–3 čtivé, poutavé a věcné věty shrnující podstatu a klíčové zajímavosti tajenky po jejím odhalení (vzdělávací tečka na závěr).
+- Zobrazuje se VÝHRADNĚ po úspěšném vyřešení případu (ve stavu `SOLVED` pod kartou „📖 O co šlo“). Při neuzavření případu (`DRAWER`) zůstává skrytá.
 
 ### `core_facts` (string[8–10])
 Základní binární rozřazovací síť pro první fázi hráčského dotazování (princip 20 otázek).

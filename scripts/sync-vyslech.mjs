@@ -261,6 +261,7 @@ async function main() {
             secret_answer: caseData.secret_answer,
             accepted_synonyms: caseData.accepted_synonyms || caseData.aliases || [],
             initial_clue: caseData.initial_clue || '',
+            summary: caseData.summary || null,
             is_active: caseData.is_active !== undefined ? caseData.is_active : true,
             updated_at: new Date().toISOString(),
         }
