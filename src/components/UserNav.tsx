@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { LogIn, LogOut, User as UserIcon } from 'lucide-react'
+import ProfileModal from '@/components/ProfileModal'
 
 export default function UserNav() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   // Klientský Supabase klient
   const supabase = createBrowserClient(
@@ -71,7 +73,12 @@ export default function UserNav() {
 
     return (
       <div className="flex items-center gap-1 xl:gap-2 shrink-0">
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 rounded-full py-0.5 sm:py-1 px-2 sm:px-2.5 min-w-0">
+        <button
+          type="button"
+          onClick={() => setIsProfileOpen(true)}
+          className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 hover:border-amber-400/60 hover:bg-slate-800/80 rounded-full py-0.5 sm:py-1 px-2 sm:px-2.5 min-w-0 transition cursor-pointer text-left"
+          title="Zobrazit profil hráče, statistiky a odznaky"
+        >
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -87,7 +94,7 @@ export default function UserNav() {
           <span className="text-xs font-semibold text-slate-200 max-w-[76px] sm:max-w-[110px] lg:max-w-[105px] xl:max-w-[150px] truncate">
             {displayName}
           </span>
-        </div>
+        </button>
 
         <button
           onClick={handleLogout}
@@ -97,21 +104,27 @@ export default function UserNav() {
         >
           <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
+
+        <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
       </div>
     )
   }
 
   // 2. Anonymní nebo nepřihlášený uživatel
   return (
-    <button
-      onClick={handleGoogleLogin}
-      type="button"
-      className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/60 text-xs font-semibold text-slate-200 transition shadow-sm shrink-0"
-    >
-      <LogIn className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-      <span className="hidden sm:inline">Uložit postup přes Google</span>
-      <span className="sm:hidden">Přihlásit</span>
-    </button>
+    <>
+      <button
+        onClick={handleGoogleLogin}
+        type="button"
+        className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/60 text-xs font-semibold text-slate-200 transition shadow-sm shrink-0"
+      >
+        <LogIn className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <span className="hidden sm:inline">Uložit postup přes Google</span>
+        <span className="sm:hidden">Přihlásit</span>
+      </button>
+
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+    </>
   )
 }
 

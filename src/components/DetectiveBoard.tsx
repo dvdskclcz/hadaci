@@ -564,6 +564,15 @@ export default function DetectiveBoard({
                                 </div>
                             </div>
                         )}
+
+                        <div className="pt-2 text-center">
+                            <Link
+                                href="/profil"
+                                className="inline-flex items-center gap-1.5 text-xs text-amber-400/90 hover:text-amber-300 font-semibold transition"
+                            >
+                                <span>🏆 Zobrazit své statistiky a odznaky v profilu →</span>
+                            </Link>
+                        </div>
                     </div>
                 )}
 

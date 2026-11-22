@@ -5,6 +5,12 @@ import { createClient } from '@supabase/supabase-js'
 import { validateAnswer } from '@/lib/game/validator'
 import { calculateNewStreaks } from '@/lib/streaks'
 import { getDetectiveRefereeSystemPrompt } from '@/lib/detective-prompt'
+import {
+    calculateDetectiveStats,
+    getDetectiveBadges,
+    DetectiveStats,
+    BadgeItem,
+} from '@/lib/badges'
 
 // Privátní admin klient obcházející RLS na serveru
 function getAdminSupabaseClient() {
@@ -765,6 +771,7 @@ export async function submitDetectiveGuessAction(
     newWrongCount?: number
     isGameOver?: boolean
     streaks?: any
+    badges?: BadgeItem[]
 }> {
     const {
         caseId,
@@ -855,6 +862,7 @@ export async function submitDetectiveGuessAction(
     // Případ B: Správný tip -> VÍTĚZSTVÍ!
     if (validation.isCorrect) {
         let finalStreaks: any = null
+        let userBadges: BadgeItem[] = []
 
         if (user) {
             try {
@@ -882,6 +890,26 @@ export async function submitDetectiveGuessAction(
                         todayDateStr
                     )
                 }
+
+                // Vyhodnocení odznaků výslechu (zpětné i aktuální)
+                const [{ data: userStates }, { data: allCases }] = await Promise.all([
+                    adminSupabase
+                        .from('user_detective_state')
+                        .select('case_id, status, score_earned, questions_log, wrong_guesses_count, is_drawer_repair, drawer_attempts')
+                        .eq('user_id', user.id),
+                    adminSupabase
+                        .from('detective_cases')
+                        .select('id, slug, publish_date')
+                        .lte('publish_date', todayDateStr)
+                        .eq('is_active', true)
+                        .order('publish_date', { ascending: true }),
+                ])
+
+                const { stats: dStats, hasDrawerComeback } = calculateDetectiveStats(
+                    userStates || [],
+                    allCases || []
+                )
+                userBadges = getDetectiveBadges(dStats, hasDrawerComeback)
             } catch (dbErr) {
                 console.warn('Uložení vítězství výslechu do DB selhalo:', dbErr)
             }
@@ -893,6 +921,7 @@ export async function submitDetectiveGuessAction(
             secretAnswer: caseData.secret_answer,
             summary: caseData.summary || null,
             streaks: finalStreaks,
+            badges: userBadges,
             message: 'Brilantní dedukce! Případ byl úspěšně vyřešen.',
         }
     }
@@ -947,4 +976,32 @@ export async function submitDetectiveGuessAction(
             : `${newWrongCount}. chybný tip (-15 b.) – ${attemptsText}.`,
     }
 }
+
+// 4. Získání statistik výslechu pro přihlášeného hráče
+export async function getDetectiveUserStatsAction(): Promise<DetectiveStats | null> {
+    const supabase = await createServerSupabaseClient()
+    const adminSupabase = getAdminSupabaseClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' })
+    const [{ data: userStates }, { data: allCases }] = await Promise.all([
+        adminSupabase
+            .from('user_detective_state')
+            .select('case_id, status, score_earned, questions_log, wrong_guesses_count, is_drawer_repair, drawer_attempts, created_at')
+            .eq('user_id', user.id),
+        adminSupabase
+            .from('detective_cases')
+            .select('id, slug, publish_date')
+            .lte('publish_date', todayStr)
+            .eq('is_active', true)
+            .order('publish_date', { ascending: true }),
+    ])
+
+    const { stats } = calculateDetectiveStats(userStates || [], allCases || [])
+    return stats
+}
+
 

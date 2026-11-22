@@ -500,3 +500,4 @@ export async function getUserStreaksAction() {
         solveStreakMax: data?.solve_streak_max ?? 0,
     }
 }
+
