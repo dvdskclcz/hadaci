@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Bot, Brain, MessageSquare, ArrowRight } from 'lucide-react'
 import LeaderboardPlayerTable from '@/components/LeaderboardPlayerTable'
+import { getLeaderboardAction } from '@/app/actions/leaderboard'
 
 export const metadata: Metadata = {
     title: 'Síň slávy a žebříčky',
@@ -43,39 +44,13 @@ async function LeaderboardTables() {
     await connection()
     const supabase = await createServerSupabaseClient()
 
-    // 1. Načteme souboj AI modelů
-    const { data: aiStats } = await supabase
-        .from('v_ai_model_stats')
-        .select('*')
+    // 1. Načteme souboj AI modelů a časové žebříčky paralelně
+    const [aiStatsRes, leaderboardData] = await Promise.all([
+        supabase.from('v_ai_model_stats').select('*'),
+        getLeaderboardAction(),
+    ])
 
-    // 2. Načteme žebříček hráčů z pohledu
-    const { data: players } = await supabase
-        .from('v_leaderboard_players')
-        .select('*')
-        .limit(20)
-
-    // 3. Načteme profily s jejich sériemi
-    const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, nickname, daily_streak_current, daily_streak_max, solve_streak_current, solve_streak_max')
-
-    // Propojíme data z pohledu s profily
-    const profileMap = new Map<string, any>()
-    profiles?.forEach((prof: any) => {
-        if (prof.id) profileMap.set(prof.id, prof)
-        if (prof.nickname) profileMap.set(prof.nickname, prof)
-    })
-
-    const enrichedPlayers = (players || []).map((p: any) => {
-        const prof = profileMap.get(p.user_id) || profileMap.get(p.id) || profileMap.get(p.nickname)
-        return {
-            ...p,
-            daily_streak_current: p.daily_streak_current ?? prof?.daily_streak_current ?? 0,
-            daily_streak_max: p.daily_streak_max ?? prof?.daily_streak_max ?? 0,
-            solve_streak_current: p.solve_streak_current ?? prof?.solve_streak_current ?? 0,
-            solve_streak_max: p.solve_streak_max ?? prof?.solve_streak_max ?? 0,
-        }
-    })
+    const aiStats = aiStatsRes.data
 
     return (
         <div className="space-y-8">
@@ -134,8 +109,8 @@ async function LeaderboardTables() {
                 </div>
             </div>
 
-            {/* 2. Karta: Nejlepší hádači se sloupci sérií a přepínačem Skóre vs. Série */}
-            <LeaderboardPlayerTable players={enrichedPlayers} />
+            {/* 2. Karta: Nejlepší hádači s přepínačem období (Týden / Měsíc / Celkově) a sérií */}
+            <LeaderboardPlayerTable data={leaderboardData} />
 
             {/* 3. Upoutávka na Režim 2: Detektivní výslech */}
             <Link
